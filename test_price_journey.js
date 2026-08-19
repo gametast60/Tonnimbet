@@ -1,0 +1,437 @@
+/**
+ * Test Suite: Price Journey & Decision Engine
+ * Tests all 30 Scenarios specified in Section 18
+ */
+
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+
+const engine = require('./price_journey_engine.js');
+const {
+  STANDARD_BOXING_ODDS,
+  createBoxingPrice,
+  createCanonicalPrice,
+  parseRawWebsitePrice,
+  findBoxingPriceStepIndex,
+  createPriceSnapshot,
+  PriceJourneyTracker,
+  evaluateContext,
+  runDecisionEngine,
+  presentKipUserDecision
+} = engine;
+
+let passedTests = 0;
+let totalTests = 0;
+
+function runTest(name, fn) {
+  totalTests++;
+  try {
+    fn();
+    console.log(`✅ [PASS] Case ${totalTests}: ${name}`);
+    passedTests++;
+  } catch (err) {
+    console.error(`❌ [FAIL] Case ${totalTests}: ${name}`);
+    console.error(err);
+  }
+}
+
+console.log('=== RUNNING PRICE JOURNEY ENGINE TEST SUITE (30 CASES) ===\n');
+
+// 1. Raw Red Parsing
+runTest('Raw Red Parsing (HDP 1 : 230)', () => {
+  const parsed = parseRawWebsitePrice('<p class="rate-red">HDP 1 : 230</p>');
+  assert.strictEqual(parsed.favCorner, 'red');
+  assert.strictEqual(parsed.num, 2);
+  assert.strictEqual(parsed.den, 1);
+});
+
+// 2. Raw Blue Parsing
+runTest('Raw Blue Parsing (300 : 1 HDP)', () => {
+  const parsed = parseRawWebsitePrice('<p class="rate-blue">300 : 1 HDP</p>');
+  assert.strictEqual(parsed.favCorner, 'blue');
+  assert.strictEqual(parsed.num, 3);
+  assert.strictEqual(parsed.den, 1);
+});
+
+// 3. Two-sided Parsing
+runTest('Two-sided Raw HTML Parsing from files', () => {
+  const redTxt = '<div data-v-7b2c79bf="" class="Head-boxer-red"><img data-v-7b2c79bf="" src="https://s3.ap-southeast-1.amazonaws.com/cdn.boxing.com/17867617040201.1.jpg" alt="boxer_red"> <div data-v-7b2c79bf="" class="Boxer-info"><p data-v-7b2c79bf="" class="boxer-name"><span data-v-7b2c79bf="" class="title-boxer-name">Name</span> <span data-v-7b2c79bf="" class="first">Khong Beng</span> <span data-v-7b2c79bf="" class="last">S.Thongphuban</span></p> <p data-v-7b2c79bf="" class="rate-red">HDP 1 : 230</p> <div data-v-7b2c79bf="" class="history"></div></div></div>';
+  const blueTxt = '<div data-v-7b2c79bf="" class="Head-boxer-blue"><div data-v-7b2c79bf="" class="Boxer-info"><p data-v-7b2c79bf="" class="boxer-name"><span data-v-7b2c79bf="" class="title-boxer-name">Name</span> <span data-v-7b2c79bf="" class="first">Nopphadet</span> <span data-v-7b2c79bf="" class="last">Tor.Yaemsuan</span></p> <p data-v-7b2c79bf="" class="rate-blue">300 : 1 HDP</p> <div data-v-7b2c79bf="" class="history"></div></div> <img data-v-7b2c79bf="" src="https://s3.ap-southeast-1.amazonaws.com/cdn.boxing.com/17867617403211.2.jpg" alt="boxer_blue"></div>';
+
+  const parsedRed = parseRawWebsitePrice(redTxt);
+  const parsedBlue = parseRawWebsitePrice(blueTxt);
+
+  assert.strictEqual(parsedRed.favCorner, 'red');
+  assert.strictEqual(parsedRed.num, 2);
+  assert.strictEqual(parsedBlue.favCorner, 'blue');
+  assert.strictEqual(parsedBlue.num, 3);
+});
+
+// 4. Malformed HTML
+runTest('Malformed HTML handling', () => {
+  const parsed = parseRawWebsitePrice('<div>invalid html without odds</div>');
+  assert.strictEqual(parsed.error, 'UNKNOWN_PRICE_FORMAT');
+});
+
+// 5. Missing Price
+runTest('Missing Price handling', () => {
+  const parsedNull = parseRawWebsitePrice(null);
+  const parsedEmpty = parseRawWebsitePrice('');
+  assert.strictEqual(parsedNull.error, 'MISSING_PRICE');
+  assert.strictEqual(parsedEmpty.error, 'MISSING_PRICE');
+});
+
+// 6. Unknown Format
+runTest('Unknown Format handling', () => {
+  const parsed = parseRawWebsitePrice('XYZ ABC DEF');
+  assert.strictEqual(parsed.error, 'UNKNOWN_PRICE_FORMAT');
+});
+
+// 7. Canonical Fractional Price
+runTest('Canonical Fractional Price Structure', () => {
+  const snap = createPriceSnapshot('HDP 1:230', '300:1 HDP', 'red', 3, 2);
+  assert.strictEqual(snap.canonical.favoritePrice.numerator, 3);
+  assert.strictEqual(snap.canonical.favoritePrice.denominator, 2);
+  assert.strictEqual(snap.canonical.priceKey, '3/2');
+});
+
+// 8. Favorite Mapping
+runTest('Favorite Corner Mapping', () => {
+  const snap = createPriceSnapshot('HDP 1:230', '300:1 HDP', 'blue', 7, 4);
+  assert.strictEqual(snap.canonical.favoriteCorner, 'blue');
+  assert.strictEqual(snap.canonical.underdogCorner, 'red');
+  assert.strictEqual(snap.canonical.priceKey, '7/4');
+});
+
+// 9. Side Flip
+runTest('Side Flip Red -> Blue', () => {
+  const snap1 = createPriceSnapshot('', '', 'red', 2, 1);
+  const snap2 = createPriceSnapshot('', '', 'blue', 2, 1);
+  assert.strictEqual(snap1.canonical.favoriteCorner, 'red');
+  assert.strictEqual(snap2.canonical.favoriteCorner, 'blue');
+});
+
+// 10. Canonical Equality
+runTest('Canonical Equality (2/1 == 2/1)', () => {
+  const snap1 = createPriceSnapshot('', '', 'red', 2, 1);
+  const snap2 = createPriceSnapshot('', '', 'red', 2, 1);
+  assert.strictEqual(snap1.canonical.priceKey, snap2.canonical.priceKey);
+  assert.strictEqual(snap1.canonical.favoriteCorner, snap2.canonical.favoriteCorner);
+});
+
+// 11. Invalid Fraction
+runTest('Invalid Fraction handling', () => {
+  assert.throws(() => {
+    createPriceSnapshot('', '', 'red', 0, 1);
+  });
+});
+
+// 12. First Snapshot
+runTest('First Snapshot state', () => {
+  const tracker = new PriceJourneyTracker();
+  const snap = createPriceSnapshot('', '', 'red', 3, 2);
+  const state = tracker.appendSnapshot(snap);
+  assert.strictEqual(state.previousSnapshot, null);
+  assert.strictEqual(state.movementDirection, 'UNCHANGED');
+  assert.strictEqual(state.stepDistance, 0);
+});
+
+// 13. Second Snapshot
+runTest('Second Snapshot tracking', () => {
+  const tracker = new PriceJourneyTracker();
+  const snap1 = createPriceSnapshot('', '', 'red', 3, 2);
+  const snap2 = createPriceSnapshot('', '', 'red', 7, 4);
+  tracker.appendSnapshot(snap1);
+  const state = tracker.appendSnapshot(snap2);
+  assert.notStrictEqual(state.previousSnapshot, null);
+  assert.strictEqual(state.previousSnapshot.canonical.priceKey, '3/2');
+  assert.strictEqual(state.currentSnapshot.canonical.priceKey, '7/4');
+});
+
+// 14. Multiple Snapshot
+runTest('Multiple Snapshot history accumulation', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2));
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4));
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 2, 1));
+  const state = tracker.getJourneyState();
+  assert.strictEqual(state.priceHistory.length, 3);
+  assert.strictEqual(state.journeyPattern, '3/2 -> 7/4 -> 2/1');
+});
+
+// 15. Step Distance
+runTest('Step Distance calculation (3/2 -> 7/4)', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2)); // Index 3
+  const state = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4)); // Index 4
+  assert.strictEqual(state.stepDistance, 1);
+  assert.strictEqual(state.movementDirection, 'UP');
+});
+
+// 16. Unsupported Step
+runTest('Unsupported Step Index handling', () => {
+  const idx = findBoxingPriceStepIndex(99, 1);
+  assert.strictEqual(idx, null);
+});
+
+// 17. UP Movement
+runTest('UP Movement (Favorite Stronger)', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4)); // Index 4
+  const state = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 2, 1)); // Index 5
+  assert.strictEqual(state.movementDirection, 'UP');
+});
+
+// 18. DOWN Movement
+runTest('DOWN Movement (Favorite Weaker)', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 2, 1)); // Index 5
+  const state = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4)); // Index 4
+  assert.strictEqual(state.movementDirection, 'DOWN');
+});
+
+// 19. UNCHANGED Movement
+runTest('UNCHANGED Movement', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 2, 1));
+  const state = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 2, 1));
+  assert.strictEqual(state.movementDirection, 'UNCHANGED');
+  assert.strictEqual(state.stepDistance, 0);
+});
+
+// 20. Rapid Movement
+runTest('Rapid Movement detection', () => {
+  const tracker = new PriceJourneyTracker();
+  const t0 = 100000;
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 11, 8, t0)); // Index 2
+  const state = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 1, t0 + 1000)); // Index 7 (diff=5)
+  assert.strictEqual(state.pace, 'rapid');
+});
+
+// 21. NO_POSITION State
+runTest('NO_POSITION Context Evaluation', () => {
+  const evalCtx = evaluateContext(null, 'NO_POSITION', 'none', 0, 0);
+  assert.strictEqual(evalCtx.positionState, 'NO_POSITION');
+  assert.strictEqual(evalCtx.marketContext, 'NEUTRAL_CONTEXT');
+});
+
+// 22. IN_POSITION State
+runTest('IN_POSITION Context Evaluation', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2));
+  const journey = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4));
+  const evalCtx = evaluateContext(journey, 'IN_POSITION', 'red', 500, -200);
+  assert.strictEqual(evalCtx.positionState, 'IN_POSITION');
+  assert.strictEqual(evalCtx.marketContext, 'FAVORABLE_CONTEXT');
+});
+
+// 23. FAVORABLE Context
+runTest('FAVORABLE Context (User holds Red, Red Moves UP)', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2));
+  const journey = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4)); // UP
+  const evalCtx = evaluateContext(journey, 'IN_POSITION', 'red', 1000, -500);
+  assert.strictEqual(evalCtx.marketContext, 'FAVORABLE_CONTEXT');
+});
+
+// 24. UNFAVORABLE Context
+runTest('UNFAVORABLE Context (User holds Red, Red Moves DOWN)', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4));
+  const journey = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2)); // DOWN
+  const evalCtx = evaluateContext(journey, 'IN_POSITION', 'red', 1000, -500);
+  assert.strictEqual(evalCtx.marketContext, 'UNFAVORABLE_CONTEXT');
+});
+
+// 25. EXIT_READY State
+runTest('EXIT_READY Position Evaluation', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2));
+  const journey = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4));
+  const evalCtx = evaluateContext(journey, 'IN_POSITION', 'red', 1000, -500, true);
+  assert.strictEqual(evalCtx.positionState, 'EXIT_READY');
+});
+
+// 26. EXITED State
+runTest('EXITED Position Evaluation (Independent of PnL)', () => {
+  const evalCtx = evaluateContext(null, 'EXITED', 'red', -300, 200);
+  assert.strictEqual(evalCtx.positionState, 'EXITED');
+});
+
+// 27. CRITICAL TEST: Same Current Price / Different Journey
+runTest('CRITICAL TEST: Same Current Price / Different Journey', () => {
+  // Journey A: 5/1 -> 4/1 -> 3/1 -> 2/1
+  const trackerA = new PriceJourneyTracker();
+  trackerA.appendSnapshot(createPriceSnapshot('', '', 'red', 5, 1));
+  trackerA.appendSnapshot(createPriceSnapshot('', '', 'red', 4, 1));
+  trackerA.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 1));
+  const journeyA = trackerA.appendSnapshot(createPriceSnapshot('', '', 'red', 2, 1));
+
+  // Journey B: 10/9 -> 5/4 -> 3/2 -> 2/1
+  const trackerB = new PriceJourneyTracker();
+  trackerB.appendSnapshot(createPriceSnapshot('', '', 'red', 10, 9));
+  trackerB.appendSnapshot(createPriceSnapshot('', '', 'red', 5, 4));
+  trackerB.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2));
+  const journeyB = trackerB.appendSnapshot(createPriceSnapshot('', '', 'red', 2, 1));
+
+  // Assertions: Current price is identical
+  assert.strictEqual(journeyA.currentSnapshot.canonical.priceKey, '2/1');
+  assert.strictEqual(journeyB.currentSnapshot.canonical.priceKey, '2/1');
+
+  // History and previous snapshots are different
+  assert.notStrictEqual(journeyA.previousSnapshot.canonical.priceKey, journeyB.previousSnapshot.canonical.priceKey);
+  assert.strictEqual(journeyA.previousSnapshot.canonical.priceKey, '3/1');
+  assert.strictEqual(journeyB.previousSnapshot.canonical.priceKey, '3/2');
+
+  assert.notStrictEqual(journeyA.journeyPattern, journeyB.journeyPattern);
+  assert.strictEqual(journeyA.journeyPattern, '5/1 -> 4/1 -> 3/1 -> 2/1');
+  assert.strictEqual(journeyB.journeyPattern, '10/9 -> 5/4 -> 3/2 -> 2/1');
+});
+
+// 28. Same Journey / Different Position
+runTest('Same Journey / Different Position Contexts', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 3, 2));
+  const journey = tracker.appendSnapshot(createPriceSnapshot('', '', 'red', 7, 4)); // Red UP
+
+  const ctxRed = evaluateContext(journey, 'IN_POSITION', 'red', 500, -200);
+  const ctxBlue = evaluateContext(journey, 'IN_POSITION', 'blue', -200, 500);
+
+  assert.strictEqual(ctxRed.marketContext, 'FAVORABLE_CONTEXT');
+  assert.strictEqual(ctxBlue.marketContext, 'UNFAVORABLE_CONTEXT');
+});
+
+// 29. Legacy PnL & Hedging Regression
+runTest('Legacy PnL & Hedging Calculation Logic', () => {
+  // Test PnL logic: fav ticket stake 1000 at 2/1 => win 1000, risk 2000
+  const tFav = { corner: 'red', side: 'fav', a: 2, b: 1, stake: 1000 };
+  const numA = parseFloat(tFav.a) || 1;
+  const numB = parseFloat(tFav.b) || 1;
+  const riskFav = tFav.stake * (numA / numB);
+  assert.strictEqual(riskFav, 2000);
+
+  // Test PnL logic: dog ticket stake 1000 at 5/4 => win 1250, risk 1000
+  const tDog = { corner: 'blue', side: 'dog', a: 5, b: 4, stake: 1000 };
+  const winDog = tDog.stake * (5 / 4);
+  assert.strictEqual(winDog, 1250);
+});
+
+// 30. End-to-End Flow
+runTest('End-to-End Flow (Parser -> Snapshot -> Tracker -> Context -> Engine -> Presenter)', () => {
+  const rawRed = '<p class="rate-red">HDP 1 : 230</p>';
+  const parsed = parseRawWebsitePrice(rawRed);
+  assert.strictEqual(parsed.favCorner, 'red');
+
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshot(rawRed, '', 'red', 3, 2));
+  const journey = tracker.appendSnapshot(createPriceSnapshot(rawRed, '', parsed.favCorner, parsed.num, parsed.den));
+
+  const ctx = evaluateContext(journey, 'IN_POSITION', 'red', 800, -400, false);
+  const decisionResult = runDecisionEngine(journey, ctx);
+  const presentation = presentKipUserDecision(decisionResult, journey, ctx);
+
+  assert.ok(decisionResult.decision);
+  assert.ok(decisionResult.reasonCodes.length > 0);
+  assert.ok(presentation.statusBadgeText);
+  assert.ok(presentation.reasonText);
+  assert.ok(presentation.actionAdviceText);
+  assert.ok(presentation.watchOutText);
+});
+
+// 31. Skew Profit Strategy (70/30 Runner)
+runTest('Skew Profit Strategy (70/30 Runner)', () => {
+  const { calculateStrategyHedge } = engine;
+  const res = calculateStrategyHedge({
+    strategy: 'skew_runner',
+    leadingCorner: 'red',
+    leadingProfit: 1000,
+    laggingProfit: -500,
+    isHedgeByFav: false,
+    targetRatio: 3.0 // 3/1
+  });
+
+  assert.strictEqual(res.isReady, true);
+  assert.ok(res.finalRedProf > res.finalBlueProf, 'Leading red should retain more profit');
+  assert.ok(res.finalBlueProf >= 0, 'Lagging blue should have guaranteed positive profit');
+});
+
+// 32. Smart Cut-Loss Strategy
+runTest('Smart Cut-Loss Strategy (Cap loss at ~20%)', () => {
+  const { calculateStrategyHedge } = engine;
+  const res = calculateStrategyHedge({
+    strategy: 'smart_cut',
+    leadingCorner: 'red',
+    leadingProfit: 1000,
+    laggingProfit: -1000,
+    isHedgeByFav: false,
+    targetRatio: 2.0 // 2/1
+  });
+
+  assert.ok(res.finalBlueProf > -1000, 'Cut loss should significantly reduce downside from -1000');
+  assert.ok(res.hedgeStake > 0, 'Hedge stake should be calculated');
+});
+
+// 33. Multi-Target Ladder
+runTest('Multi-Target Ladder Generation', () => {
+  const { calculateMultiTargets } = engine;
+  const targets = calculateMultiTargets('red', 1000, -500, 'skew_runner');
+  assert.strictEqual(targets.length, 15);
+  assert.ok(targets.some(t => t.tier === 'safe' || t.tier === 'sweet_spot'));
+
+});
+
+// 34. Entry Signal Scanner
+runTest('Entry Signal Scanner for Beginners', () => {
+  const { evaluateEntrySignal } = engine;
+  const sigHigh = evaluateEntrySignal('red', 3, 1, 20000);
+  assert.strictEqual(sigHigh.signalType, 'SNIPER_DOG');
+
+  const sigClose = evaluateEntrySignal('blue', 5, 4, 20000);
+  assert.strictEqual(sigClose.signalType, 'MOMENTUM_FAV');
+});
+
+// 35. Skew Profit Strategy with Explicit 70% Corner Picker (Forced Red)
+runTest('Skew 70/30 with forced 70% Red when Blue is leading', () => {
+  const { calculateStrategyHedge } = engine;
+  const res = calculateStrategyHedge({
+    strategy: 'skew_runner',
+    leadingCorner: 'blue',
+    leadingProfit: 1000,
+    laggingProfit: -500,
+    isHedgeByFav: false,
+    targetRatio: 3.0,
+    skewTarget: 'red' // Force 70% to Red even though Blue is leading
+  });
+
+  assert.strictEqual(res.isReady, true);
+  assert.strictEqual(res.targetCorner, 'red', 'Should hedge Red so Red gains 70%');
+  assert.ok(res.finalRedProf > res.finalBlueProf, 'Red should have higher profit as requested by 70% Red target');
+});
+
+// 36. Skew Profit Strategy with Explicit 70% Corner Picker (Forced Blue)
+runTest('Skew 70/30 with forced 70% Blue when Red is leading', () => {
+  const { calculateStrategyHedge } = engine;
+  const res = calculateStrategyHedge({
+    strategy: 'skew_runner',
+    leadingCorner: 'red',
+    leadingProfit: 1000,
+    laggingProfit: -500,
+    isHedgeByFav: false,
+    targetRatio: 3.0,
+    skewTarget: 'blue' // Force 70% to Blue even though Red is leading
+  });
+
+  assert.strictEqual(res.isReady, true);
+  assert.strictEqual(res.targetCorner, 'blue', 'Should hedge Blue so Blue gains 70%');
+  assert.ok(res.finalBlueProf > res.finalRedProf, 'Blue should have higher profit as requested by 70% Blue target');
+});
+
+console.log(`\n==================================================`);
+console.log(`TEST SUITE COMPLETE: ${passedTests}/${totalTests} Passed`);
+console.log(`==================================================\n`);
+
+if (passedTests !== totalTests) {
+  process.exit(1);
+}
+

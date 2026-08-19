@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boxing Trade - Live Arena Desktop UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="Muypakyok2.css">
+    <link rel="stylesheet" href="quick-bet.css">
+    <script src="sound_effects.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- แถบด้านบนสุด: Fighter VS Arena Header -->
+    <div class="top-nav-bar">
+        <div class="fighter-vs-arena">
+            <!-- ฝั่งแดง -->
+            <div class="fighter-card red-card">
+                <div class="fighter-avatar red-avatar">🥊</div>
+                <div class="fighter-info">
+                    <span class="fighter-role-label">Name</span>
+                    <strong class="fighter-name" id="redFighterNameHeader">ฝั่งแดง</strong>
+                    <div id="redOddsText" class="odds-side red-side">🔴 แดง: -</div>
+                </div>
+            </div>
+
+            <!-- ตรงกลาง: VS & Live Odds Header Bar -->
+            <div class="vs-center-box">
+                <div class="vs-badge">VS</div>
+                <div class="win-rate-meter">
+                    <span class="glove-icon left">🥊</span>
+                    <div class="meter-bar-container">
+                        <div class="meter-bar red-meter" style="width: 50%;"></div>
+                        <div class="meter-bar blue-meter" style="width: 50%;"></div>
+                    </div>
+                    <span class="glove-icon right">🥊</span>
+                </div>
+                <div id="liveOddsHeader" class="odds-center">🔴 ปิดรับแทง (ไม่มีราคา)</div>
+                <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:2px;">
+                    <button id="btnToggleAutoSync" class="btn-sync-toggle on" onclick="toggleAutoSync()" title="คลิกเพื่อหยุดดึงราคาชั่วคราว / ล็อคราคาหน้าจอ">
+                        🟢 ดึงราคา (ON)
+                    </button>
+                    <button id="btnToggleSound" class="btn-sound-toggle on" onclick="toggleSound()" title="คลิกเพื่อปิด/เปิดเสียงแจ้งเตือนจังหวะทอง">
+                        🔊 เสียงเตือน: ON
+                    </button>
+                </div>
+            </div>
+
+
+
+            <!-- ฝั่งน้ำเงิน -->
+            <div class="fighter-card blue-card">
+                <div class="fighter-info text-right">
+                    <span class="fighter-role-label">Name</span>
+                    <strong class="fighter-name" id="blueFighterNameHeader">ฝั่งน้ำเงิน</strong>
+                    <div id="blueOddsText" class="odds-side blue-side">🔵 น้ำเงิน: -</div>
+                </div>
+                <div class="fighter-avatar blue-avatar">🥊</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- โครงสร้าง 3 คอลัมน์ (เหมือนเว็บต้นทาง) -->
+    <div class="main-layout">
+
+        <!-- ============================================== -->
+        <!-- คอลัมน์ 1 (ซ้าย): History Bet & Matchs Strategy -->
+        <!-- ============================================== -->
+        <div class="layout-col col-left">
+            
+            <!-- การ์ด 1.1: History Bet / คลังเงินทุน & ประวัติการกด -->
+            <div class="glossy-panel">
+                <div class="glossy-header">
+                    <span>📜 History Bet</span>
+                    <span style="font-size: 0.75rem; opacity: 0.9;" id="ticketCount">0 แผล</span>
+                </div>
+                <div class="panel-body">
+                    <!-- คลังเงินทุน -->
+                    <div class="wallet-grid">
+                        <div class="input-group">
+                            <label>หน้าตักตั้งต้น (บาท):</label>
+                            <input type="number" id="totalCapital" value="20000" oninput="calculateAll()">
+                        </div>
+                        <div class="stat-box">
+                            <label>ทุนคงเหลือพร้อมกด</label>
+                            <div id="remCapital" class="stat-val text-green">20,000 B</div>
+                        </div>
+                    </div>
+
+                    <!-- ปุ่มเพิ่มประวัติ -->
+                    <button class="btn-add" onclick="addTicket()" style="margin-top: 10px;">➕ เพิ่มประวัติแผลที่กด</button>
+
+                    <!-- ผลการวิเคราะห์พอร์ต -->
+                    <div class="analysis-box">
+                        <div class="analysis-row">
+                            <span style="color: var(--text-muted);">ถ้า [ฝั่งแดง] ชนะ:</span>
+                            <span id="netRed">-</span>
+                        </div>
+                        <div class="analysis-row">
+                            <span style="color: var(--text-muted);">ถ้า [ฝั่งน้ำเงิน] ชนะ:</span>
+                            <span id="netBlue">-</span>
+                        </div>
+                        <div class="analysis-row" style="border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 6px; margin-top: 6px;">
+                            <span style="color: var(--text-muted);">สถานะพอร์ตหลัก:</span>
+                            <span id="mainSide" style="color: var(--primary); font-weight: bold;">-</span>
+                        </div>
+                    </div>
+
+                    <!-- รายการการ์ดแผลที่กด (Scroll ได้) -->
+                    <div id="ticketContainer" class="ticket-container"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================== -->
+        <!-- คอลัมน์ 2 (กลาง): จอระบบนำทางเซียนมวย & แผงแทงด่วน Auto Bet Console -->
+        <!-- ============================================== -->
+        <div class="layout-col col-center">
+            
+            <!-- จอระบบนำทาง & คำนวณราคาออกตัว -->
+            <div class="center-display-card">
+                
+                <div class="target-card" id="targetBox">
+                    📌 <strong>ราคาเป้าหมายจากระบบ:</strong> เพิ่มประวัติแผลด้านซ้าย เพื่อคำนวณราคาออกตัวครับ
+                </div>
+
+                <!-- Partial Cut Loss: เชื่อมข้อมูลพอร์ตและกด Quick Bet ได้ แต่ไม่เชื่อม Auto-Hedge -->
+                <section class="partial-cut-loss-panel" aria-labelledby="partialCutLossTitle">
+                    <div class="partial-cut-loss-head">
+                        <div>
+                            <h3 id="partialCutLossTitle">ผิดทาง : คำนวณ Cut Loss</h3>
+                            <p>คำนวณจากสถานะพอร์ตและราคาสดปัจจุบัน</p>
+                        </div>
+                        <div class="partial-calc-toggle-wrapper">
+                            <span class="partial-calc-toggle-label">คำนวณ Cut Loss :</span>
+                            <div id="partialCalcToggle" class="auto-confirm-toggle">
+                                <button class="btn-confirm off active" onclick="setPartialCalcVisible(false)" title="ซ่อนส่วนคำนวณ">ปิด</button>
+                                <button class="btn-confirm on" onclick="setPartialCalcVisible(true)" title="แสดงส่วนคำนวณ">เปิด</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="partial-cut-loss-body hidden" id="partialCutLossBody">
+                        <div class="partial-input-grid">
+                            <label>ความเสี่ยงตั๋วแรก (R1)
+                                <input id="partialRisk1" type="number" readonly value="0">
+                            </label>
+                            <label>กำไรเป้าหมายเดิม (P1)
+                                <input id="partialProfit1" type="number" readonly value="0">
+                            </label>
+                        </div>
+
+                        <div class="partial-hedge-summary">
+                            <div class="partial-hedge-title">ตั๋วสวน <span id="partialLiveOddsText">รอราคาสด</span></div>
+                            <div class="partial-summary-row"><span>ยอดที่ต้องกรอกในตั๋วสวน (P2)</span><b id="partialProfit2">฿0</b></div>
+                            <div class="partial-summary-row"><span>ความเสี่ยงตั๋วสวนเมื่อแพ้ (R2)</span><b id="partialRisk2">฿0</b></div>
+                        </div>
+
+                        <div class="partial-slider-head"><label for="partialHedgeTarget">ดึงทุนคืนเมื่อผิดทาง</label><b id="partialHedgeTargetValue">฿0</b></div>
+                        <input id="partialHedgeTarget" class="partial-range" type="range" min="0" max="0" step="100" value="0" oninput="calculatePartialCutLoss()">
+                        <p class="partial-helper">ปรับ P2 ได้ไม่เกิน R1 · ระบบจะใช้ P2 เป็นยอดกรอกในช่องยอดแทง</p>
+
+                        <div class="partial-result-grid">
+                            <div><span>หากฝั่งแรกแพ้จนจบ</span><b id="partialNetLoss">฿0</b></div>
+                            <div><span>หากฝั่งแรกพลิกชนะ</span><b id="partialNetWin">฿0</b></div>
+                        </div>
+                        <button type="button" class="partial-test-button" onclick="placePartialCutLossBet()">⚡ กดเน้นเสียน้อยทันที</button>
+                    </div>
+                </section>
+
+                <!-- Action Card: สถานะการออกตัว -->
+                <div class="action-card neutral" id="actionCard">
+                    <div class="action-title">
+                        <span id="actionTitleText">👉 สถานะการออกตัว:</span>
+                        <span id="statusBadge" style="font-size:0.75rem;">-</span>
+                    </div>
+                    <div class="action-value">
+                        <span id="actionSide" style="font-size: 0.9rem;">-</span>
+                        <span id="actionStake" class="stake-badge">0 B</span>
+                    </div>
+                    <div class="result-details">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>ถ้า <span style="color:#ef4444; font-weight:700;">🔴 แดง</span> ชนะ:</span>
+                            <span id="resultRedVal" style="font-weight:600;">-</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>ถ้า <span style="color:#3b82f6; font-weight:700;">🔵 น้ำเงิน</span> ชนะ:</span>
+                            <span id="resultBlueVal" style="font-weight:600;">-</span>
+                        </div>
+                    </div>
+
+                    <!-- ปุ่มกด One-Click Auto-Hedge เด่นชัดสำหรับมือใหม่ -->
+                    <button type="button" id="btnOneClickHedge" class="btn-one-click-hedge disabled" onclick="executeOneClickHedge()" disabled title="คลิกเพื่อออกตัวล็อคผลตอบแทนทันทีในคลิกเดียว">
+                        <span>⚡ กดล็อคกำไรทันที (One-Click Auto-Hedge)</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- ============================================== -->
+            <!-- แผงกดแทงด่วนด้านล่าง (Auto Bet Console ตามแบบเว็บต้นทาง) -->
+            <!-- ============================================== -->
+            <div class="source-bet-console">
+                <!-- ฝั่งซ้าย: ปุ่ม BET RED ขนาดใหญ่ -->
+                <div class="console-side-btn">
+                    <button class="source-bet-btn red" onclick="qbTriggerAutoBet('red')">
+                        <span class="glove-badge">🥊</span>
+                        <span class="btn-text">BET RED</span>
+                    </button>
+                </div>
+
+                <!-- ตรงกลาง: Console Controls -->
+                <div class="console-center-controls">
+
+                    <!-- Auto Confirm Toggle (เหนือ RATIO จัดกลาง) -->
+                    <div class="auto-confirm-wrapper">
+                        <span class="auto-confirm-label">Auto Confirm :</span>
+                        <div id="autoConfirmToggle" class="auto-confirm-toggle">
+                            <button class="btn-confirm off active" onclick="setAutoConfirm(false)" title="ต้องกดยืนยันเองทุกครั้ง">ปิด</button>
+                            <button class="btn-confirm on" onclick="setAutoConfirm(true)" title="Delay 2 วินาทีแล้วกดยืนยันอัตโนมัติ">เปิด</button>
+                        </div>
+                    </div>
+
+                    <!-- แถวบน: Win/Lose Preview + Ratio Header -->
+                    <div class="console-top-row">
+                        <span id="qbRedPnL" class="qb-pnl-badge qb-pnl-red">Win 0 / Lose 0</span>
+                        <div class="ratio-pill">RATIO</div>
+                        <span id="qbBluePnL" class="qb-pnl-badge qb-pnl-blue">Win 0 / Lose 0</span>
+                    </div>
+
+                    <!-- แถวกลาง: Min Bet, Input Box, Max Bet -->
+                    <div class="console-input-row">
+                        <button class="limit-btn min-limit" onclick="qbFillMin()" title="คลิกเพื่อใส่ค่า Min">
+                            <span class="limit-title">MIN BET</span>
+                            <span class="limit-number" id="qbMinVal">10</span>
+                        </button>
+
+                        <div class="amount-input-wrapper">
+                            <input type="number" id="qbBetAmount" placeholder="Input amount bet" min="0">
+                            <button type="button" class="qb-clear-btn" onclick="qbClearBetAmount()" title="เคลียร์จำนวนเงิน">✕</button>
+                        </div>
+
+                        <button class="limit-btn max-limit" onclick="qbFillMax()" title="คลิกเพื่อใส่ค่า Max">
+                            <span class="limit-title">MAX BET</span>
+                            <span class="limit-number" id="qbMaxVal">0</span>
+                        </button>
+                    </div>
+
+                    <!-- แถวล่าง: Quick Chips (+10, +50, +100, +500, +1K) -->
+                    <div class="console-chips-row">
+                        <button class="source-chip" onclick="qbAddBet(10)">+ 10</button>
+                        <button class="source-chip" onclick="qbAddBet(50)">+ 50</button>
+                        <button class="source-chip" onclick="qbAddBet(100)">+ 100</button>
+                        <button class="source-chip" onclick="qbAddBet(500)">+ 500</button>
+                        <button class="source-chip" onclick="qbAddBet(1000)">+ 1 K</button>
+                    </div>
+
+                    <!-- สถานะ Feedback -->
+                    <div class="qb-status" id="qbStatus"></div>
+                </div>
+
+                <!-- ฝั่งขวา: ปุ่ม BET BLUE ขนาดใหญ่ -->
+                <div class="console-side-btn">
+                    <button class="source-bet-btn blue" onclick="qbTriggerAutoBet('blue')">
+                        <span class="glove-badge">🥊</span>
+                        <span class="btn-text">BET BLUE</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================== -->
+        <!-- คอลัมน์ 3 (ขวา): Matchs & Strategy + All Ticket Table -->
+        <!-- ============================================== -->
+        <div class="layout-col col-right">
+
+            <!-- การ์ด 3.1: Matchs & Strategy -->
+            <div class="glossy-panel">
+                <div class="glossy-header">
+                    <span>⚔️ Matchs & Strategy ⚔️</span>
+                </div>
+                <div class="panel-body">
+                    <div class="strategy-header-row">
+                        <label class="strategy-section-title">🎯 เลือกเป้าหมายการออกตัว:</label>
+                        <span id="strategyReadyBadge" class="strat-ready-count-badge idle">
+                            ⏳ 0 กลยุทธ์
+                        </span>
+                    </div>
+                    <div class="strategy-grid strategy-grid-4">
+                        <button class="btn-strat active" id="btnSkewRunner" onclick="setStrategy('skew_runner')">
+                            🔥 รันกำไร 70/30<br><small>(รันฝั่งเต็ง + กำไรการันตี)</small>
+                        </button>
+                        <button class="btn-strat" id="btnEqual" onclick="setStrategy('equal')">
+                            🟢 กำไรเท่ากัน<br><small>(เฉลี่ย 2 ฝั่งเท่ากัน)</small>
+                        </button>
+                        <button class="btn-strat" id="btnBreakeven" onclick="setStrategy('breakeven')">
+                            🟡 ขอเท่าทุน<br><small>(ฝั่งแพ้ได้ 0 บาท)</small>
+                        </button>
+                        <button class="btn-strat" id="btnSmartCut" onclick="setStrategy('smart_cut')">
+                            🛡️ ยอมเสียน้อย<br><small>(ได้มาก+เสียน้อย)</small>
+                        </button>
+                    </div>
+
+                    <!-- ตัวเลือกรันกำไร 70% ฝั่งไหน (เฉพาะเมื่อเลือก skew_runner) -->
+                    <div id="skewTargetRow" class="skew-target-selector">
+                        <div class="skew-target-header">
+                            <span>🔥 เลือกล็อค 70% ให้ฝั่ง:</span>
+                            <span class="skew-target-desc">(ฝั่งตรงข้ามการันตี 30%)</span>
+                        </div>
+                        <div class="skew-target-check-grid">
+                            <label class="skew-check-card red-check checked" id="labelSkewRed" onclick="setSkewTarget('red')">
+                                <input type="radio" name="skewCornerTarget" id="skewRadioRed" value="red" checked>
+                                <span class="skew-check-box"><span class="check-icon">✓</span></span>
+                                <span class="skew-check-text">🔴 แดง 70%</span>
+                            </label>
+                            <label class="skew-check-card blue-check" id="labelSkewBlue" onclick="setSkewTarget('blue')">
+                                <input type="radio" name="skewCornerTarget" id="skewRadioBlue" value="blue">
+                                <span class="skew-check-box"><span class="check-icon">✓</span></span>
+                                <span class="skew-check-text">🔵 น้ำเงิน 70%</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 8px;">
+                        <label style="color: var(--primary); font-weight: 600; display:block; margin-bottom:4px;">📲 กรอกราคาไหล ณ ปัจจุบันหน้าจอ:</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <select id="liveFavCorner" onchange="calculateAll()" style="background: rgba(15, 23, 42, 0.9); font-weight: 600;">
+                                <option value="red">🔴 ฝั่งแดง เป็นต่อ</option>
+                                <option value="blue">🔵 ฝั่งน้ำเงิน เป็นต่อ</option>
+                            </select>
+                            <div class="price-box">
+                                <input type="number" id="liveOddA" value="3" step="1" oninput="calculateAll()">
+                                <span style="color: var(--text-muted);">:</span>
+                                <input type="number" id="liveOddB" value="2" step="1" oninput="calculateAll()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- การ์ด 3.2: 🎯 Pre-Set Auto Limit Order (ตั้งเป้าหมายออกตัวอัตโนมัติ) -->
+            <div class="glossy-panel auto-order-panel">
+                <div class="glossy-header">
+                    <span>🎯 ตั้งเป้าหมายออกตัวอัตโนมัติ (Auto-Hedge Order)</span>
+                    <div id="hedgeToggle" class="hedge-toggle">
+                        <button class="btn-hedge off active" onclick="setAutoLimitOrder(false)" title="ปิดระบบดักยิงอัตโนมัติ">ปิด</button>
+                        <button class="btn-hedge on" onclick="setAutoLimitOrder(true)" title="เปิดระบบดักยิงอัตโนมัติเมื่อกลยุทธ์เข้าเป้า">เปิด</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="auto-order-grid">
+                        <div>
+                            <label style="font-size: 0.76rem; color: var(--text-muted); display:block; margin-bottom:4px;">เลือกเป้าหมายกลยุทธ์ที่จะดักยิง:</label>
+                            <select id="autoOrderTargetSelect" onchange="onAutoTargetSelectChange()" style="background: rgba(15, 23, 42, 0.95); font-weight: 600; width:100%; padding:6px 8px; font-size:0.78rem; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; color: #fff;">
+                                <option value="skew_runner" selected>🔥 รันกำไร 70/30</option>
+                                <option value="equal">🟢 กำไรเท่ากัน</option>
+                                <option value="breakeven">🟡 ขอเท่าทุน</option>
+                                <option value="smart_cut">🛡️ ยอมเสียน้อย</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="autoOrderStatusBox" class="auto-status-box idle" style="margin-top: 8px;">
+                        <span>สถานะ: <strong id="autoOrderStatusText">ปิดระบบอยู่ (เลือกกลยุทธ์แล้วกดเปิด AUTO)</strong></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- Confirm Bet Modal Overlay (ถอดแบบ UX/UI จากเว็บต้นทาง 100%) -->
+    <!-- ============================================== -->
+    <div id="confirmBetModalOverlay" class="confirm-modal-overlay" style="display: none;">
+        <div class="confirm-modal-box">
+            <!-- ปุ่มปิดมุมขวาบน (กากบาทสีแดง) -->
+            <button type="button" class="confirm-modal-close" onclick="qbCancelConfirmBet()" title="ปิด / ยกเลิกการเดิมพัน">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 3.6375L16.3625 0L10 6.3625L3.6375 0L0 3.6375L6.3625 10L0 16.3625L3.6375 20L10 13.6375L16.3625 20L20 16.3625L13.6375 10L20 3.6375Z" fill="white"/>
+                </svg>
+            </button>
+
+            <!-- หัวข้อ Confirm Bet -->
+            <p class="confirm-modal-title" id="confirmModalTitle">Confirm Bet</p>
+
+            <!-- แถวที่ 1: อัตราต่อรอง HDP และ ยอดเงินเดิมพัน -->
+            <div class="confirm-modal-row">
+                <p class="confirm-modal-rate" id="confirmModalRate">HDP 3 : 5</p>
+                <p class="confirm-modal-amount" id="confirmModalAmount">10.00 THB</p>
+            </div>
+
+            <!-- แถวที่ 2: ฝั่งที่แทง (Side) และ ยอดเงินถ้าชนะ (Win) -->
+            <div class="confirm-modal-row">
+                <p class="confirm-modal-side" id="confirmModalSideWrapper">Side <span class="BLUE" id="confirmModalSideText">Blue</span></p>
+                <p class="confirm-modal-win" id="confirmModalWin">Win 17.00</p>
+            </div>
+
+            <!-- แถวที่ 3: ชื่อน้องนักมวย และ ยอดเงินถ้าแพ้ (Lose) -->
+            <div class="confirm-modal-row">
+                <p class="confirm-modal-fighter">
+                    <span class="BLUE" id="confirmModalFighterName">MaLek Chechut Efo Phum Phan Muang</span>
+                </p>
+                <p class="confirm-modal-lose" id="confirmModalLose">Lose 10.00</p>
+            </div>
+
+            <!-- ปุ่มกดยืนยันสีเขียวสดใส (Confirm) -->
+            <button type="button" id="btnConfirmBetSubmit" class="confirm-modal-btn-confirm" onclick="qbSubmitConfirmBet()">
+                <p>Confirm</p>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script src="price_journey_engine.js"></script>
+<script src="Muypakyok2.js"></script>
+<script src="quick-bet.js"></script>
+</body>
+</html>

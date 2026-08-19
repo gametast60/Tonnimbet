@@ -1,0 +1,554 @@
+/* ============================================================
+   Quick Bet Console — quick-bet.css
+   แผงควบคุมการแทงด่วนด้านล่างจอ ถอดแบบจากเว็บต้นทาง 100%
+   ============================================================ */
+
+.source-bet-console {
+    background: linear-gradient(180deg, rgba(16, 28, 54, 0.95) 0%, rgba(8, 14, 28, 0.98) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    display: grid;
+    grid-template-columns: 100px 1fr 100px;
+    gap: 12px;
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .source-bet-console {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---- ปุ่มใหญ่ BET RED / BET BLUE ---- */
+.console-side-btn {
+    display: flex;
+    height: 100%;
+}
+
+.source-bet-btn {
+    width: 100%;
+    min-height: 110px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #fff;
+    font-family: 'Kanit', sans-serif;
+    font-weight: 800;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.source-bet-btn.red {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 50%, #991b1b 100%);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.source-bet-btn.blue {
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.source-bet-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+.source-bet-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.glove-badge {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.btn-text {
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- ส่วนควบคุมตรงกลาง ---- */
+.console-center-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.console-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+/* ---- Win/Lose Preview Badge ---- */
+.qb-pnl-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'Kanit', sans-serif;
+    padding: 3px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+    flex: 1;
+    text-align: center;
+    letter-spacing: 0.2px;
+}
+
+.qb-pnl-red {
+    background: linear-gradient(135deg, rgba(239,68,68,0.18) 0%, rgba(185,28,28,0.22) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+}
+
+.qb-pnl-blue {
+    background: linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(29,78,216,0.22) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    color: #93c5fd;
+}
+
+.qb-pnl-badge.has-value {
+    animation: pnlPop 0.2s ease;
+}
+
+@keyframes pnlPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.04); }
+    100% { transform: scale(1); }
+}
+
+.ratio-pill {
+    background: rgba(10, 16, 32, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    padding: 3px 16px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1px;
+    flex-shrink: 0;
+}
+
+/* ---- Auto Confirm Toggle (เหนือ RATIO จัดกลาง) ---- */
+.auto-confirm-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.auto-confirm-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-family: 'Kanit', sans-serif;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+}
+
+.auto-confirm-toggle {
+    display: inline-flex;
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.08);
+}
+
+.btn-confirm {
+    border: none;
+    background: transparent;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.72rem;
+    padding: 3px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    font-family: 'Kanit', sans-serif;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm.off.active {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.btn-confirm.on.active {
+    background: #10b981;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.55);
+    animation: pulseAutoConfirm 1.8s infinite;
+}
+
+@keyframes pulseAutoConfirm {
+    0%   { transform: scale(1); box-shadow: 0 0 4px rgba(16, 185, 129, 0.3); }
+    50%  { transform: scale(1.04); box-shadow: 0 0 14px rgba(16, 185, 129, 0.7); }
+    100% { transform: scale(1); box-shadow: 0 0 4px rgba(16, 185, 129, 0.3); }
+}
+
+/* ---- แถว Input, Min, Max ---- */
+.console-input-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    gap: 8px;
+    align-items: center;
+}
+
+.limit-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: rgba(10, 16, 32, 0.8);
+    transition: all 0.18s;
+    line-height: 1.2;
+}
+
+.limit-btn.min-limit {
+    border: 1.5px solid #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+}
+.limit-btn.min-limit .limit-title { color: #f59e0b; font-size: 0.65rem; font-weight: 700; }
+.limit-btn.min-limit .limit-number { color: #fbbf24; font-size: 0.95rem; font-weight: 800; }
+
+.limit-btn.max-limit {
+    border: 1.5px solid #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+}
+.limit-btn.max-limit .limit-title { color: #60a5fa; font-size: 0.65rem; font-weight: 700; }
+.limit-btn.max-limit .limit-number { color: #93c5fd; font-size: 0.95rem; font-weight: 800; }
+
+.limit-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.15);
+}
+
+.amount-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.amount-input-wrapper input[type="number"] {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(56, 189, 248, 0.6);
+    background: rgba(4, 8, 18, 0.95);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    outline: none;
+    text-align: center;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 10px rgba(56, 189, 248, 0.2);
+    transition: all 0.2s;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.amount-input-wrapper input[type="number"]:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.amount-input-wrapper input[type="number"]::-webkit-outer-spin-button,
+.amount-input-wrapper input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.qb-clear-btn {
+    position: absolute;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.qb-clear-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: var(--red-side);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* ---- Quick Chips Row (+10, +50, +100, +500, +1K) ---- */
+.console-chips-row {
+    display: flex;
+    gap: 6px;
+}
+
+.source-chip {
+    flex: 1;
+    padding: 6px 4px;
+    background: rgba(15, 24, 48, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+
+.source-chip:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--primary);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.source-chip:active {
+    transform: translateY(0);
+}
+
+/* Feedback Status */
+.qb-status {
+    min-height: 14px;
+    font-size: 0.75rem;
+    text-align: center;
+    color: var(--text-muted);
+    transition: color 0.3s;
+}
+
+/* ============================================================
+   Confirm Bet Popup Modal (UX/UI ถอดแบบจากเว็บต้นทาง 100%)
+   ============================================================ */
+
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    animation: confirmFadeIn 0.18s ease-out;
+}
+
+.confirm-modal-box {
+    position: relative;
+    width: 370px;
+    max-width: 92vw;
+    background-color: #121927;
+    border-radius: 14px;
+    padding: 20px 22px 18px 22px;
+    box-shadow: 
+        0 20px 50px rgba(0, 0, 0, 0.8),
+        0 0 25px rgba(0, 180, 216, 0.25),
+        0 0 25px rgba(239, 68, 68, 0.25);
+    
+    /* กรอบนีออน Gradient 2 สี แดงมุมบนซ้าย -> ฟ้ามุมล่างขวา ตามภาพจริง */
+    border: 2px solid transparent;
+    background-image: 
+        linear-gradient(#121927, #121927), 
+        linear-gradient(135deg, #ef4444 0%, #ef4444 32%, #00d2ff 68%, #00d2ff 100%);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    
+    animation: confirmPopIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ปุ่มปิด X มุมขวาบน */
+.confirm-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #e11d48;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.5);
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.confirm-modal-close:hover {
+    background: #f43f5e;
+    transform: scale(1.08);
+}
+
+.confirm-modal-close:active {
+    transform: scale(0.95);
+}
+
+.confirm-modal-close svg {
+    display: block;
+    width: 12px;
+    height: 12px;
+}
+
+/* หัวข้อ Confirm Bet */
+.confirm-modal-title {
+    margin: 0 0 16px 0;
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    text-align: left;
+}
+
+/* แถวข้อมูล */
+.confirm-modal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.confirm-modal-row p {
+    margin: 0;
+}
+
+/* แถวที่ 1: ราคา & ยอดเงิน ตัวใหญ่หนา */
+.confirm-modal-rate {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.confirm-modal-amount {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+/* แถวที่ 2 & 3 */
+.confirm-modal-side {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.confirm-modal-win {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-align: right;
+}
+
+.confirm-modal-fighter {
+    font-size: 0.95rem;
+    font-weight: 600;
+    max-width: 68%;
+    word-break: break-word;
+    text-align: left;
+}
+
+.confirm-modal-lose {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-align: right;
+}
+
+/* คลาสสีของเว็บหลัก: BLUE & RED */
+.confirm-modal-box .BLUE {
+    color: #00d2ff !important;
+    font-weight: 700;
+}
+
+.confirm-modal-box .RED {
+    color: #ff4d4d !important;
+    font-weight: 700;
+}
+
+/* ปุ่ม Confirm สีเขียวสดใส */
+.confirm-modal-btn-confirm {
+    width: 100%;
+    margin-top: 18px;
+    height: 48px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(180deg, #38e246 0%, #16a34a 50%, #15803d 100%);
+    box-shadow: 
+        0 6px 20px rgba(22, 163, 74, 0.45), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confirm-modal-btn-confirm p {
+    margin: 0;
+    font-family: 'Kanit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.6px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.confirm-modal-btn-confirm:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    box-shadow: 
+        0 8px 25px rgba(34, 197, 94, 0.6), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.confirm-modal-btn-confirm:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes confirmFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes confirmPopIn {
+    from { 
+        opacity: 0; 
+        transform: scale(0.92) translateY(8px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}
+
+

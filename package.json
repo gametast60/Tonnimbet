@@ -1,0 +1,14 @@
+{
+  "name": "muaythai-money-price-journey",
+  "version": "1.0.0",
+  "description": "Price Journey & Decision Engine — Muay Thai Money Trading System",
+  "main": "price_journey_engine.js",
+  "scripts": {
+    "test": "node test_price_journey.js",
+    "lint": "node -c price_journey_engine.js Muypakyok2.js test_price_journey.js",
+    "build": "node -c price_journey_engine.js Muypakyok2.js"
+  },
+  "keywords": ["muaythai", "trading", "price-journey", "decision-engine"],
+  "author": "Antigravity",
+  "license": "ISC"
+}
