@@ -1,6 +1,7 @@
 let tickets = [];
 let currentStrategy = 'skew_runner';
 let skewTarget70 = 'red'; // 'red' | 'blue' — ฝั่งที่ได้รับ 70% กำไร (เฉพาะ skew_runner)
+let breakevenProfitTarget = 'red'; // 'red' | 'blue' — ฝั่งที่ได้รับกำไร (เฉพาะ breakeven selector ใหม่)
 let _isHedgeExecuting = false;
 let _hedgeExecutionTimer = null;
 
@@ -172,9 +173,11 @@ function setStrategy(strat) {
     if (btnBreakeven) btnBreakeven.classList.toggle('active', strat === 'breakeven');
     if (btnSmartCut) btnSmartCut.classList.toggle('active', strat === 'smart_cut');
 
-    // แสดง/ซ่อน skewTargetRow เฉพาะเมื่อเลือก skew_runner (จำค่าเดิมไว้ ไม่รีเซ็ต)
+    // แสดง/ซ่อน selector เฉพาะกลยุทธ์ (จำค่าเดิมไว้ ไม่รีเซ็ต)
     const skewTargetRow = document.getElementById('skewTargetRow');
     if (skewTargetRow) skewTargetRow.classList.toggle('hidden', strat !== 'skew_runner');
+    const breakevenTargetRow = document.getElementById('breakevenTargetRow');
+    if (breakevenTargetRow) breakevenTargetRow.classList.toggle('hidden', strat !== 'breakeven');
 
     calculateAll();
 }
@@ -188,6 +191,24 @@ function setSkewTarget(val) {
     const rBlue = document.getElementById('skewRadioBlue');
     const lRed = document.getElementById('labelSkewRed');
     const lBlue = document.getElementById('labelSkewBlue');
+
+    if (rRed) rRed.checked = (val === 'red');
+    if (rBlue) rBlue.checked = (val === 'blue');
+    if (lRed) lRed.classList.toggle('checked', val === 'red');
+    if (lBlue) lBlue.classList.toggle('checked', val === 'blue');
+
+    calculateAll();
+}
+
+function setBreakevenProfitTarget(val) {
+    // val: 'red' | 'blue'
+    if (val !== 'red' && val !== 'blue') val = 'red';
+    breakevenProfitTarget = val;
+
+    const rRed = document.getElementById('breakevenRadioRed');
+    const rBlue = document.getElementById('breakevenRadioBlue');
+    const lRed = document.getElementById('labelBreakevenRed');
+    const lBlue = document.getElementById('labelBreakevenBlue');
 
     if (rRed) rRed.checked = (val === 'red');
     if (rBlue) rBlue.checked = (val === 'blue');
@@ -458,6 +479,10 @@ function calculateAll() {
 
     syncPartialCutLossFromPortfolio(netRed, netBlue);
     calculateActionAndAdvisor(netRed, netBlue);
+
+    // Hook สำหรับ extension ภายนอก (เช่น bt_hub_extension.js Recorder)
+    // จะถูกเรียกทุกครั้งที่ calculateAll ทำงาน (ทั้งจากภายในไฟล์นี้และภายนอก)
+    try { if (window.__postCalculateAllHook && typeof window.__postCalculateAllHook === 'function') window.__postCalculateAllHook(); } catch (e) {}
 }
 
 function qbParseOddsText(text) {
@@ -585,7 +610,7 @@ function renderTargetPriceList(leadingCorner, leadingProfit, laggingProfit, isHe
 
 
 // ==========================================
-// ระบบ Auto Confirm ออร์เดอร์อัตโนมัติ (ดัก Confirm Dialog → delay 2 วิ → auto-click)
+// ระบบ Auto Confirm ออร์เดอร์อัตโนมัติ (ดัก Confirm Dialog → delay 1 วิ → auto-click)
 // ==========================================
 let autoConfirm = {
     enabled: false,
@@ -654,7 +679,7 @@ function _installConfirmDialogObserver() {
                     if (autoConfirm._processedConfirmKeys.size > 200) {
                         autoConfirm._processedConfirmKeys = new Set(Array.from(autoConfirm._processedConfirmKeys).slice(-100));
                     }
-                    console.log('%c🔔 [AUTO-CONFIRM] พบ Confirm Dialog → หน่วง 2 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
+                    console.log('%c🔔 [AUTO-CONFIRM] พบ Confirm Dialog → หน่วง 1 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
                     setTimeout(() => {
                         const freshBtns = _tryLocateConfirmButtons();
                         const btnToClick = freshBtns[freshBtns.length - 1] || targetBtn;
@@ -665,7 +690,7 @@ function _installConfirmDialogObserver() {
                             }
                             if (typeof SoundEngine !== 'undefined') SoundEngine.playOrderExecuted();
                         }
-                    }, 2000);
+                    }, 1000);
                     return;
                 }
             }
@@ -831,7 +856,8 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
             leadingProfit,
             laggingProfit,
             isHedgeByFav,
-            targetRatio
+            targetRatio,
+            breakevenTarget: breakevenProfitTarget
         });
         const resSmartCut = PriceJourneyEngine.calculateStrategyHedge({
             strategy: 'smart_cut',
@@ -1086,7 +1112,8 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             laggingProfit,
             isHedgeByFav,
             targetRatio,
-            skewTarget: currentStrategy === 'skew_runner' ? skewTarget70 : 'auto'
+            skewTarget: currentStrategy === 'skew_runner' ? skewTarget70 : 'auto',
+            breakevenTarget: currentStrategy === 'breakeven' ? breakevenProfitTarget : 'auto'
         });
     } else {
         let hedgeStake = (currentStrategy === 'equal')
@@ -1135,7 +1162,8 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             } else if (currentStrategy === 'equal') {
                 stratStatusText = '🟢 กำไรเท่ากัน';
             } else if (currentStrategy === 'breakeven') {
-                stratStatusText = '🟡 ขอเท่าทุน';
+                const beSideLabel = breakevenProfitTarget === 'red' ? '🔴 แดงได้กำไร' : '🔵 น้ำเงินได้กำไร';
+                stratStatusText = '🟡 ขอเท่าทุน (' + beSideLabel + ')';
             } else if (currentStrategy === 'smart_cut') {
                 stratStatusText = '🛡️ ยอมเสียน้อย (คัทลอส)';
             } else {
@@ -1167,6 +1195,9 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             if (currentStrategy === 'skew_runner') {
                 const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : (skewTarget70 === 'blue' ? '🔵 น้ำเงิน' : '');
                 stratLabel = 'รันกำไร 70/30' + (skewSideLabel ? ' (' + skewSideLabel + ')' : '');
+            } else if (currentStrategy === 'breakeven') {
+                const beSideLabel = breakevenProfitTarget === 'red' ? '🔴 แดงได้กำไร' : '🔵 น้ำเงินได้กำไร';
+                stratLabel = 'ขอเท่าทุน (' + beSideLabel + ')';
             } else if (currentStrategy === 'smart_cut') {
                 stratLabel = 'คุมขาดทุน';
             } else {
@@ -1238,7 +1269,7 @@ function renderAdvancePlanTable(netRed, netBlue) {
 
     let targets = [];
     if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculateMultiTargets) {
-        targets = PriceJourneyEngine.calculateMultiTargets(leadingCorner, leadingProfit, laggingProfit, currentStrategy, currentStrategy === 'skew_runner' ? skewTarget70 : 'auto');
+        targets = PriceJourneyEngine.calculateMultiTargets(leadingCorner, leadingProfit, laggingProfit, currentStrategy, currentStrategy === 'skew_runner' ? skewTarget70 : 'auto', currentStrategy === 'breakeven' ? breakevenProfitTarget : 'auto');
     } else {
         targets = standardBoxingOdds.map(odd => {
             let ratio = odd.val;
@@ -1269,7 +1300,8 @@ function renderAdvancePlanTable(netRed, netBlue) {
                 laggingProfit,
                 isHedgeByFav: false,
                 targetRatio: liveRatio,
-                skewTarget: currentStrategy === 'skew_runner' ? skewTarget70 : 'auto'
+                skewTarget: currentStrategy === 'skew_runner' ? skewTarget70 : 'auto',
+                breakevenTarget: currentStrategy === 'breakeven' ? breakevenProfitTarget : 'auto'
             });
         } else {
             let stake = (currentStrategy === 'equal') ? (leadingProfit - laggingProfit) / (1 + liveRatio) : Math.abs(laggingProfit) / liveRatio;
@@ -1538,3 +1570,40 @@ function stopSimulation() {
     _simCount = 0;
     console.log('%c🛑 หยุดการจำลองสถานการณ์และรีเซ็ตเรียบร้อยแล้ว', 'color: #ef4444; font-weight: bold;');
 }
+
+// ============================================================
+// ✨ GLOBAL EXPOSURE for bt_hub_extension.js (bridge let/const vars → window)
+// เพื่อให้ไฟล์ bt_hub_extension.js ที่ load ต่อๆ เข้าถึงตัวแปร let/const ในไฟล์นี้ได้
+// ============================================================
+(function _exposeGlobalsForBacktestExt() {
+    const _get = function (name) { return eval(name); };
+    const _set = function (name, val) { return eval(name + ' = val;'); };
+    const varsToExpose = [
+        'tickets', 'currentStrategy', 'skewTarget70', 'breakevenProfitTarget',
+        '_simTimer', '_simCount', '_simMaxCount', '_simIntervalSec', '_isSimPaused',
+        'isAutoSyncEnabled', 'currentPrice', 'previousPrice', 'standardBoxingOdds',
+        '_isHedgeExecuting', '_hedgeExecutionTimer'
+    ];
+    varsToExpose.forEach(function (name) {
+        try {
+            Object.defineProperty(window, name, {
+                get: function () { try { return _get(name); } catch (e) { return undefined; } },
+                set: function (v) { try { _set(name, v); } catch (e) {} },
+                configurable: true,
+                enumerable: true
+            });
+        } catch (e) {}
+    });
+    const fnAliases = {
+        'updateStrategyButtons': 'updateStrategyButtonsReadiness'
+    };
+    Object.keys(fnAliases).forEach(function (alias) {
+        const realName = fnAliases[alias];
+        try {
+            Object.defineProperty(window, alias, {
+                get: function () { try { return eval(realName); } catch (e) { return undefined; } },
+                configurable: true, enumerable: true
+            });
+        } catch (e) {}
+    });
+})();

@@ -444,25 +444,100 @@
       laggingProfit = 0,
       isHedgeByFav = false,
       targetRatio = 1,
-      skewTarget = 'auto'  // 'auto' | 'red' | 'blue' — ผู้ใช้เลือกว่าฝั่งไหนได้ 70% (skew_runner เท่านั้น)
+      skewTarget = 'auto',       // 'auto' | 'red' | 'blue' — ฝั่งไหนได้ 70% (skew_runner)
+      breakevenTarget = 'auto'   // 'auto' | 'red' | 'blue' — ฝั่งไหนได้กำไร (breakeven)
     } = params;
 
     let targetCorner = leadingCorner === 'red' ? 'blue' : 'red';
     let hedgeStake = 0;
     let finalRedProf = 0;
     let finalBlueProf = 0;
+    let _overrideFinals = null;   // { finalRedProf, finalBlueProf, targetCorner } สำหรับ custom breakeven ที่สลับมุม hedge
+    let _effectiveIsHedgeByFav = isHedgeByFav;  // isHedgeByFav ที่ถูกต้องสำหรับ targetCorner ปัจจุบัน
 
     const absLag = Math.abs(laggingProfit);
+    const actualNetRed  = leadingCorner === 'red' ? leadingProfit : laggingProfit;
+    const actualNetBlue = leadingCorner === 'blue' ? leadingProfit : laggingProfit;
+    const originalTargetCorner = leadingCorner === 'red' ? 'blue' : 'red';
+    const favCorner = isHedgeByFav ? originalTargetCorner : leadingCorner;
 
     if (strategy === 'equal') {
       // กลยุทธ์เฉลี่ยกำไรเท่ากันทั้ง 2 ฝั่ง
       hedgeStake = (leadingProfit - laggingProfit) / (1 + targetRatio);
     } else if (strategy === 'breakeven') {
-      // กลยุทธ์กันทุน (ฝั่งแพ้ = 0 บาท)
-      if (isHedgeByFav) {
-        hedgeStake = absLag;
+      if (breakevenTarget === 'red' || breakevenTarget === 'blue') {
+        // ==== NEW: กลยุทธ์ขอเท่าทุนพร้อมเลือกฝั่งได้กำไร (breakevenTarget = ฝั่งได้กำไร, ฝั่งตรงข้าม = 0 บาท) ====
+        const profitSide = breakevenTarget;
+        const zeroSide   = profitSide === 'red' ? 'blue' : 'red';
+        const zeroNet    = zeroSide === 'red' ? actualNetRed : actualNetBlue;
+        let x = 0;
+        let hCorner = originalTargetCorner;
+
+        if (Math.abs(zeroNet) < 0.5) {
+          // zeroSide เกือบ 0 อยู่แล้ว ไม่ต้อง hedge
+          x = 0;
+          hCorner = originalTargetCorner;
+        } else if (zeroNet > 0) {
+          // zeroSide ยังมีกำไรอยู่ → hedge บน profitSide เพื่อลดกำไร zeroSide ลง (zeroSide คือฝั่งตรงข้ามของ hedge)
+          hCorner = profitSide;
+          const hIsFav = (favCorner === hCorner);
+          // final(zeroSide) = 0
+          if (zeroSide === 'red') {
+            // hedge on blue
+            x = hIsFav ? (zeroNet / targetRatio) : zeroNet;
+          } else {
+            // zeroSide === 'blue', hedge on red
+            x = hIsFav ? (zeroNet / targetRatio) : zeroNet;
+          }
+        } else {
+          // zeroNet < 0: zeroSide ขาดทุน → hedge บน zeroSide เองเพื่อกู้คืนขาดทุน → 0
+          hCorner = zeroSide;
+          const hIsFav = (favCorner === hCorner);
+          const absZero = Math.abs(zeroNet);
+          if (zeroSide === 'red') {
+            // hedge on red to recover
+            x = hIsFav ? absZero : (absZero / targetRatio);
+          } else {
+            // zeroSide === 'blue', hedge on blue to recover
+            x = hIsFav ? absZero : (absZero / targetRatio);
+          }
+        }
+
+        if (!isFinite(x) || x < 0) x = 0;
+        hedgeStake = Math.round(x);
+        targetCorner = hCorner;
+        _effectiveIsHedgeByFav = (favCorner === hCorner);
+
+        // คำนวณผลลัพธ์สุดท้ายแบบ generalized ตาม hCorner
+        const h = hCorner;
+        const hFav = _effectiveIsHedgeByFav;
+        const r = targetRatio;
+        let fR = actualNetRed, fB = actualNetBlue;
+        if (h === 'blue') {
+          if (hFav) {
+            fR = actualNetRed - (hedgeStake * r);
+            fB = actualNetBlue + hedgeStake;
+          } else {
+            fR = actualNetRed - hedgeStake;
+            fB = actualNetBlue + (hedgeStake * r);
+          }
+        } else {
+          if (hFav) {
+            fR = actualNetRed + hedgeStake;
+            fB = actualNetBlue - (hedgeStake * r);
+          } else {
+            fR = actualNetRed + (hedgeStake * r);
+            fB = actualNetBlue - hedgeStake;
+          }
+        }
+        _overrideFinals = { finalRedProf: fR, finalBlueProf: fB, targetCorner: hCorner };
       } else {
-        hedgeStake = absLag / targetRatio;
+        // ==== Legacy: breakeven แบบเดิม (กันทุนฝั่งแพ้โดยอัตโนมัติ) ====
+        if (isHedgeByFav) {
+          hedgeStake = absLag;
+        } else {
+          hedgeStake = absLag / targetRatio;
+        }
       }
     } else if (strategy === 'skew_runner') {
       // กลยุทธ์ 70/30 Runner: บังคับให้ฝั่งที่ผู้ใช้เลือก (skewTarget) ได้กำไร ~70%
@@ -563,8 +638,12 @@
       }
     }
 
-    // คำนวณผลลัพธ์สุทธิหลังกดออกตัว (เสมอคือการแทงฝั่ง targetCorner)
-    if (isHedgeByFav) {
+    // คำนวณผลลัพธ์สุทธิหลังกดออกตัว
+    if (_overrideFinals) {
+      finalRedProf  = _overrideFinals.finalRedProf;
+      finalBlueProf = _overrideFinals.finalBlueProf;
+      if (_overrideFinals.targetCorner) targetCorner = _overrideFinals.targetCorner;
+    } else if (_effectiveIsHedgeByFav) {
       if (leadingCorner === 'red') {
         finalRedProf  = leadingProfit - (hedgeStake * targetRatio);
         finalBlueProf = laggingProfit + hedgeStake;
@@ -584,7 +663,9 @@
 
     const isReady = (strategy === 'smart_cut') 
       ? (Math.min(finalRedProf, finalBlueProf) >= -Math.abs(laggingProfit) * 0.25)
-      : (finalRedProf >= 0 && finalBlueProf >= 0);
+      : (strategy === 'breakeven' && (breakevenTarget === 'red' || breakevenTarget === 'blue'))
+        ? (finalRedProf >= -0.5 && finalBlueProf >= -0.5 && Math.min(finalRedProf, finalBlueProf) >= -0.5)
+        : (finalRedProf >= 0 && finalBlueProf >= 0);
 
     const minProfit = Math.min(finalRedProf, finalBlueProf);
     const maxProfit = Math.max(finalRedProf, finalBlueProf);
@@ -603,7 +684,7 @@
   }
 
   // Multi-Target Ladder Calculator (ระดับ 1: ปลอดภัย / ระดับ 2: Sweet Spot / ระดับ 3: กำไรสูงสุด)
-  function calculateMultiTargets(leadingCorner, leadingProfit, laggingProfit, strategy = 'skew_runner', skewTarget = 'auto') {
+  function calculateMultiTargets(leadingCorner, leadingProfit, laggingProfit, strategy = 'skew_runner', skewTarget = 'auto', breakevenTarget = 'auto') {
     if (leadingProfit === laggingProfit || leadingProfit <= 0) return [];
 
     const absLag = Math.abs(laggingProfit);
@@ -618,7 +699,8 @@
         laggingProfit,
         isHedgeByFav: false, // มาตรฐานตารางแสดงแบบฝั่งเป้าหมายได้รอง
         targetRatio: ratio,
-        skewTarget
+        skewTarget,
+        breakevenTarget
       });
 
       let tier = 'normal';
