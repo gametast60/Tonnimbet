@@ -377,6 +377,207 @@ window.HISTORICAL_FIGHTS = [
                 fav: "blue", a: 300, b: 1
             }
         ]
-    }
+    },
+
+        {
+        fightId: "fight_20260821_230548",
+        recordedAt: 1787321148250,
+        settledAt:  1787322432179,
+        fighters: { red: "ฝั่งแดง", blue: "ฝั่งน้ำเงิน" },
+        initialFav: "red",
+        initialOdds: { a: 3, b: 1 },
+        winner: "blue",
+        journey: [
+            {
+                step: 0, offsetMs: 2190, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 1, offsetMs: 21139, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 2, offsetMs: 65136, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 3, offsetMs: 143136, src: "auto_sync",
+                red:  { a: 7, b: 2, raw: "🔴 แดง: HDP 7 : 2", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 7, resolvedB: 2,
+                fav: "red", a: 7, b: 2
+            },
+            {
+                step: 4, offsetMs: 323189, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 5, offsetMs: 503190, src: "auto_sync",
+                red:  { a: 7, b: 2, raw: "🔴 แดง: HDP 7 : 2", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 7, resolvedB: 2,
+                fav: "red", a: 7, b: 2
+            },
+            {
+                step: 6, offsetMs: 563191, src: "auto_sync",
+                red:  { a: 5, b: 1, raw: "🔴 แดง: HDP 5 : 1", isValid: true },
+                blue: { a: 1, b: 3, raw: "🔵 น้ำเงิน: 1 : 3 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 5, resolvedB: 1,
+                fav: "red", a: 5, b: 1
+            },
+            {
+                step: 7, offsetMs: 724141, src: "auto_sync",
+                red:  { a: 1, b: 15, raw: "🔴 แดง: HDP 1 : 15", isValid: true },
+                blue: { a: 25, b: 1, raw: "🔵 น้ำเงิน: 25 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 25, resolvedB: 1,
+                fav: "blue", a: 25, b: 1
+            },
+            {
+                step: 8, offsetMs: 777695, src: "auto_sync",
+                red:  { a: 1, b: 20, raw: "🔴 แดง: HDP 1 : 20", isValid: true },
+                blue: { a: 30, b: 1, raw: "🔵 น้ำเงิน: 30 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 30, resolvedB: 1,
+                fav: "blue", a: 30, b: 1
+            },
+            {
+                step: 9, offsetMs: 810147, src: "auto_sync",
+                red:  { a: 1, b: 30, raw: "🔴 แดง: HDP 1 : 30", isValid: true },
+                blue: { a: 50, b: 1, raw: "🔵 น้ำเงิน: 50 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 50, resolvedB: 1,
+                fav: "blue", a: 50, b: 1
+            },
+            {
+                step: 10, offsetMs: 890907, src: "auto_sync",
+                red:  { a: 1, b: 15, raw: "🔴 แดง: HDP 1 : 15", isValid: true },
+                blue: { a: 25, b: 1, raw: "🔵 น้ำเงิน: 25 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 25, resolvedB: 1,
+                fav: "blue", a: 25, b: 1
+            },
+            {
+                step: 11, offsetMs: 964297, src: "auto_sync",
+                red:  { a: 1, b: 20, raw: "🔴 แดง: HDP 1 : 20", isValid: true },
+                blue: { a: 30, b: 1, raw: "🔵 น้ำเงิน: 30 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 30, resolvedB: 1,
+                fav: "blue", a: 30, b: 1
+            },
+            {
+                step: 12, offsetMs: 1011548, src: "auto_sync",
+                red:  { a: 1, b: 25, raw: "🔴 แดง: HDP 1 : 25", isValid: true },
+                blue: { a: 40, b: 1, raw: "🔵 น้ำเงิน: 40 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 40, resolvedB: 1,
+                fav: "blue", a: 40, b: 1
+            },
+            {
+                step: 13, offsetMs: 1037183, src: "auto_sync",
+                red:  { a: 1, b: 30, raw: "🔴 แดง: HDP 1 : 30", isValid: true },
+                blue: { a: 50, b: 1, raw: "🔵 น้ำเงิน: 50 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 50, resolvedB: 1,
+                fav: "blue", a: 50, b: 1
+            },
+            {
+                step: 14, offsetMs: 1061194, src: "auto_sync",
+                red:  { a: 1, b: 50, raw: "🔴 แดง: HDP 1 : 50", isValid: true },
+                blue: { a: 80, b: 1, raw: "🔵 น้ำเงิน: 80 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 80, resolvedB: 1,
+                fav: "blue", a: 80, b: 1
+            },
+            {
+                step: 15, offsetMs: 1116406, src: "auto_sync",
+                red:  { a: 1, b: 100, raw: "🔴 แดง: HDP 1 : 100", isValid: true },
+                blue: { a: 180, b: 1, raw: "🔵 น้ำเงิน: 180 : 1 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 180, resolvedB: 1,
+                fav: "blue", a: 180, b: 1
+            }
+        ]
+    },
+
+        {
+        fightId: "fight_20260821_222930",
+        recordedAt: 1787318970761,
+        settledAt:  1787320071198,
+        fighters: { red: "ฝั่งแดง", blue: "ฝั่งน้ำเงิน" },
+        initialFav: "blue",
+        initialOdds: { a: 11, b: 8 },
+        winner: "red",
+        journey: [
+            {
+                step: 0, offsetMs: 1903, src: "auto_sync",
+                red:  { a: 9, b: 10, raw: "🔴 แดง: HDP 9 : 10", isValid: true },
+                blue: { a: 11, b: 8, raw: "🔵 น้ำเงิน: 11 : 8 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 11, resolvedB: 8,
+                fav: "blue", a: 11, b: 8
+            },
+            {
+                step: 1, offsetMs: 716644, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 2, offsetMs: 754395, src: "auto_sync",
+                red:  { a: 5, b: 4, raw: "🔴 แดง: HDP 5 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 5, resolvedB: 4,
+                fav: "red", a: 5, b: 4
+            },
+            {
+                step: 3, offsetMs: 775900, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 4, b: 5, raw: "🔵 น้ำเงิน: 4 : 5 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 4, offsetMs: 798411, src: "auto_sync",
+                red:  { a: 7, b: 4, raw: "🔴 แดง: HDP 7 : 4", isValid: true },
+                blue: { a: 2, b: 3, raw: "🔵 น้ำเงิน: 2 : 3 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 7, resolvedB: 4,
+                fav: "red", a: 7, b: 4
+            },
+            {
+                step: 5, offsetMs: 826899, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 6, offsetMs: 852894, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 7, offsetMs: 920146, src: "auto_sync",
+                red:  { a: 4, b: 1, raw: "🔴 แดง: HDP 4 : 1", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 4, resolvedB: 1,
+                fav: "red", a: 4, b: 1
+            },
+            {
+                step: 8, offsetMs: 952133, src: "auto_sync",
+                red:  { a: 7, b: 2, raw: "🔴 แดง: HDP 7 : 2", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                resolvedFav: "red", resolvedA: 7, resolvedB: 2,
+                fav: "red", a: 7, b: 2
+            }
+        ]
+    },
+
+        
 
 ];

@@ -427,6 +427,88 @@ runTest('Skew 70/30 with forced 70% Blue when Red is leading', () => {
   assert.ok(res.finalBlueProf > res.finalRedProf, 'Blue should have higher profit as requested by 70% Blue target');
 });
 
+// 37. Safe Entry Radar Scanner
+runTest('Safe Entry Radar Zone Evaluation', () => {
+  const { evaluateEntrySafety } = engine;
+  const safe = evaluateEntrySafety(5, 4, 'red'); // 1.25
+  assert.strictEqual(safe.zone, 'SAFE');
+  assert.strictEqual(safe.riskLevel, 'LOW');
+
+  const fair = evaluateEntrySafety(2, 1, 'red'); // 2.0
+  assert.strictEqual(fair.zone, 'FAIR');
+  assert.strictEqual(fair.riskLevel, 'MEDIUM');
+
+  const highRisk = evaluateEntrySafety(4, 1, 'blue'); // 4.0
+  assert.strictEqual(highRisk.zone, 'HIGH_RISK');
+  assert.strictEqual(highRisk.riskLevel, 'HIGH');
+});
+
+// 38. 3-Bullet Money Management Allocation
+runTest('3-Bullet Money Management 40/40/20 Allocation', () => {
+  const { calculate3BulletAllocation } = engine;
+  const alloc = calculate3BulletAllocation(1000);
+  assert.strictEqual(alloc.bullet1.amount, 400);
+  assert.strictEqual(alloc.bullet2.amount, 400);
+  assert.strictEqual(alloc.bullet3.amount, 200);
+  assert.strictEqual(alloc.bullet1.amount + alloc.bullet2.amount + alloc.bullet3.amount, 1000);
+});
+
+// 39. Emergency Rescue & Loss-Capping Calculation
+runTest('Emergency Rescue HUD calculation', () => {
+  const { calculateEmergencyRescue } = engine;
+  // User enters Red @ 5:4 stake 1000 (Win +1000 / Risk -1250)
+  const tickets = [{ id: 1, corner: 'red', side: 'fav', a: 5, b: 4, stake: 1000 }];
+  // Price drops and flips to Blue @ 2:1
+  const rescue = calculateEmergencyRescue({
+    tickets,
+    currentPrice: { favCorner: 'blue', oddA: 2, oddB: 1 },
+    totalCapital: 1000
+  });
+
+  assert.strictEqual(rescue.isNeeded, true);
+  assert.strictEqual(rescue.holdingCorner, 'red');
+  assert.strictEqual(rescue.dangerCorner, 'blue');
+  assert.strictEqual(rescue.currentRiskLoss, 1250);
+  assert.strictEqual(rescue.targetCorner, 'blue');
+  assert.strictEqual(rescue.targetSide, 'fav');
+  // At Blue 2:1 Fav, stake needed = 1000 / 2 = 500 B
+  assert.strictEqual(rescue.rescueStake, 500);
+  assert.strictEqual(rescue.finalLeadingProfit, 0, 'Leading side (Red) becomes Breakeven 0 B');
+  assert.strictEqual(rescue.finalDangerProfit, -750, 'Loss on Blue reduced significantly from -1250');
+  assert.ok(rescue.lossCappedPercent > 0);
+});
+
+// 40. Emergency Rescue with Two-Sided Separate Odds
+runTest('Emergency Rescue using Two-Sided Specific Odds', () => {
+  const { calculateEmergencyRescue } = engine;
+  // User holds Blue (Win +2000 / Risk -2500)
+  const tickets = [{ id: 1, corner: 'blue', side: 'fav', a: 5, b: 4, stake: 2000 }];
+  // Market shifts: Blue is 3:1 fav, but Red underdog button offers 1:2 (pay 2:1)
+  const rescue = calculateEmergencyRescue({
+    tickets,
+    currentPrice: {
+      favCorner: 'blue',
+      oddA: 3,
+      oddB: 1,
+      redSide: { a: 1, b: 2, raw: '🔴 แดง: HDP 1 : 2' },
+      blueSide: { a: 3, b: 1, raw: '🔵 น้ำเงิน: 3 : 1 HDP' }
+    },
+    totalCapital: 2000
+  });
+
+  assert.strictEqual(rescue.isNeeded, true);
+  assert.strictEqual(rescue.holdingCorner, 'blue');
+  assert.strictEqual(rescue.dangerCorner, 'red');
+  assert.strictEqual(rescue.targetCorner, 'red');
+  assert.strictEqual(rescue.targetSide, 'dog'); // betting Red underdog
+  // Target odds should be from redSide (a=1, b=2)
+  assert.strictEqual(rescue.targetOddsA, 1);
+  assert.strictEqual(rescue.targetOddsB, 2);
+  // Stake needed = 2000
+  assert.strictEqual(rescue.rescueStake, 2000);
+  assert.strictEqual(rescue.finalLeadingProfit, 0, 'Leading Blue side becomes Breakeven');
+});
+
 console.log(`\n==================================================`);
 console.log(`TEST SUITE COMPLETE: ${passedTests}/${totalTests} Passed`);
 console.log(`==================================================\n`);

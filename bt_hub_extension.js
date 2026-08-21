@@ -59,7 +59,18 @@
             const f = document.getElementById('liveFavCorner');
             const a = parseFloat((document.getElementById('liveOddA') || {}).value);
             const b = parseFloat((document.getElementById('liveOddB') || {}).value);
-            if (f && (a > 0) && (b > 0)) return { resolvedFav: (f.value === 'blue' ? 'blue' : 'red'), resolvedA: Math.round(a), resolvedB: Math.round(b) };
+            if (f && (a > 0) && (b > 0)) {
+                const na = Math.max(a, b), nb = Math.min(a, b);
+                return { resolvedFav: (f.value === 'blue' ? 'blue' : (f.value === 'red' ? 'red' : null)), resolvedA: Math.round(na), resolvedB: Math.round(nb) };
+            }
+            const d = document.getElementById('liveDogCorner');
+            const da = parseFloat((document.getElementById('dogOddA') || {}).value);
+            const db = parseFloat((document.getElementById('dogOddB') || {}).value);
+            if (d && (da > 0) && (db > 0)) {
+                const derivedFav = d.value === 'red' ? 'blue' : (d.value === 'blue' ? 'red' : null);
+                const na = Math.max(da, db), nb = Math.min(da, db);
+                return { resolvedFav: derivedFav, resolvedA: Math.round(na), resolvedB: Math.round(nb) };
+            }
             return { resolvedFav: null, resolvedA: null, resolvedB: null };
         }
         const redRatio = red.a / red.b;
@@ -225,6 +236,32 @@
         _recRenderLibrary();
     }
 
+    function _recGenerateJsCode(r) {
+        const lines = [];
+        lines.push('    {');
+        lines.push(`        fightId: ${JSON.stringify(r.fightId)},`);
+        lines.push(`        recordedAt: ${r.recordedAt},`);
+        lines.push(`        settledAt:  ${r.settledAt},`);
+        lines.push(`        fighters: { red: ${JSON.stringify(r.fighters.red)}, blue: ${JSON.stringify(r.fighters.blue)} },`);
+        lines.push(`        initialFav: ${JSON.stringify(r.initialFav)},`);
+        lines.push(`        initialOdds: { a: ${r.initialOdds.a}, b: ${r.initialOdds.b} },`);
+        lines.push(`        winner: ${JSON.stringify(r.winner)},`);
+        lines.push('        journey: [');
+        r.journey.forEach((s, i) => {
+            const isLast = (i === r.journey.length - 1);
+            lines.push('            {');
+            lines.push(`                step: ${s.step}, offsetMs: ${s.offsetMs}, src: ${JSON.stringify(s.src)},`);
+            lines.push(`                red:  { a: ${s.red.a}, b: ${s.red.b}, raw: ${JSON.stringify(s.red.raw)}, isValid: ${s.red.isValid} },`);
+            lines.push(`                blue: { a: ${s.blue.a}, b: ${s.blue.b}, raw: ${JSON.stringify(s.blue.raw)}, isValid: ${s.blue.isValid} },`);
+            lines.push(`                resolvedFav: ${JSON.stringify(s.resolvedFav)}, resolvedA: ${s.resolvedA}, resolvedB: ${s.resolvedB},`);
+            lines.push(`                fav: ${JSON.stringify(s.fav)}, a: ${s.a}, b: ${s.b}`);
+            lines.push(`            }${isLast ? '' : ','}`);
+        });
+        lines.push('        ]');
+        lines.push('    },');
+        return lines.join('\n');
+    }
+
     function _recBuildFightRecordForMd(r) {
         const dt = (ts) => {
             const d = new Date(ts); const pad = n => String(n).padStart(2, '0');
@@ -234,39 +271,31 @@
             const s = Math.floor(ms/1000); const pad=n=>String(n).padStart(2,'0');
             return `${pad(Math.floor(s/60))}:${pad(s%60)}`;
         };
-        const winnerText = r.winner === 'red' ? 'แดงชนะ' : 'น้ำเงินชนะ';
+        const winnerText = r.winner === 'red' ? '🔴 แดงชนะ' : '🔵 น้ำเงินชนะ';
+        const jsCode = _recGenerateJsCode(r);
+
         let md = '';
-        md += `# 🥊 Fight Record: ${r.fightId}\n`;
-        md += `<!--\n`;
-        md += `  🤖 AI AGENT INSTRUCTION BLOCK (DO NOT REMOVE) — SCHEMA v2 (red/blue แยกต่อ/รองคนละคู่)\n`;
-        md += `  Transform this .md into 1 item object inside window.HISTORICAL_FIGHTS[] array in data.js\n`;
-        md += `  - Append to bottom (before closing ];)\n`;
-        md += `  - Do NOT modify existing items\n`;
-        md += `  - winner field use "red" | "blue" exactly\n`;
-        md += `  - journey[].red / journey[].blue = source of truth สำหรับแต่ละฝั่ง (field ในแต่ละฝั่ง: {a, b, raw, isValid})\n`;
-        md += `  - journey[].resolvedFav / resolvedA / resolvedB = คาดเดาได้จาก red/blue (ฝั่งที่ a/b สูงกว่าเป็น fav) — เก็บไว้เผื่อ compat\n`;
-        md += `  - สำหรับ journey[].src: แถวที่ step=0 ใช้ "open" | แถวอื่น ใช้ Source column value (lowercase)\n`;
-        md += `  - สำหรับ journey[].offsetMs: ความต่างเวลามิลลิวินาทีเทียบกับ recordedAt + แถว step=0 (0ms)\n`;
-        md += `  - fighters field: ดูจากแถว fighters.red และ fighters.blue ใต้ METADATA\n`;
-        md += `  - ❗ หาก journey แถวใดมี isValid=false ในฝั่งใดฝั่งหนึ่ง ให้ AI ตัดแถวนั้นทิ้งเลย (ไม่ต้องใส่ใน array) เพราะคือช่วงราคาหาย\n`;
-        md += `-->\n\n`;
-        md += `## 📌 METADATA [🤖 ต้องแปลงเป็น object หัว]\n\n`;
-        md += `| Key | Value |\n`;
-        md += `|-----|-------|\n`;
-        md += `| fightId | ${r.fightId} |\n`;
-        md += `| recordedAt | ${dt(r.recordedAt)} |\n`;
-        md += `| fighters.red | ${r.fighters.red} |\n`;
-        md += `| fighters.blue | ${r.fighters.blue} |\n`;
-        md += `| initialFav | ${r.initialFav} |\n`;
-        md += `| initialOdds.a | ${r.initialOdds.a} |\n`;
-        md += `| initialOdds.b | ${r.initialOdds.b} |\n`;
-        md += `| winner | ${r.winner} |\n`;
-        md += `| settledAt | ${dt(r.settledAt)} |\n`;
-        md += `| journeyCount | ${r.journey.length} |\n\n`;
+        md += `# 🥊 Fight Record: ${r.fightId}\n\n`;
+        md += `> 📋 **วิธีนำไปใช้ใน data.js:**\n`;
+        md += `> ก๊อปปี้โค้ด JavaScript ในกรอบด้านล่างนี้ (ตั้งแต่ \`{\` ถึง \`},\`) แล้วนำไปวางต่อท้าย array ในไฟล์ \`data.js\` ได้เลยทันที โดยไม่ต้องแปลงข้อมูล!\n\n`;
+        md += `\`\`\`javascript\n`;
+        md += `/* ==================== ✂️ เริ่มก๊อปปี้จากบรรทัดนี้ ==================== */\n`;
+        md += `${jsCode}\n`;
+        md += `/* ==================== ✂️ สิ้นสุดการก๊อปปี้ ==================== */\n`;
+        md += `\`\`\`\n\n`;
         md += `---\n\n`;
-        md += `## 📊 PRICE JOURNEY (Side-Separated v2) [🤖 ต้องแปลงเป็น journey[] array ตามลำดับแถว]\n\n`;
-        md += `| step | เวลาประมาณ | Source | 🔴 red raw | 🔴 red | 🔵 blue raw | 🔵 blue | resolvedFav | A:B resolved |\n`;
-        md += `|------|-----------|--------|-----------|---------|------------|---------|-------------|---------------|\n`;
+        md += `## 📌 ข้อมูลสรุปไฟท์ (Metadata)\n\n`;
+        md += `- **รหัสไฟท์ (Fight ID):** \`${r.fightId}\`\n`;
+        md += `- **เวลาเริ่มบันทึก:** ${dt(r.recordedAt)}\n`;
+        md += `- **เวลาจบการแข่งขัน:** ${dt(r.settledAt)} (ความยาวไฟท์: ${hm(r.settledAt - r.recordedAt)})\n`;
+        md += `- **คู่ชก:** 🔴 แดง: **${r.fighters.red}** vs 🔵 น้ำเงิน: **${r.fighters.blue}**\n`;
+        md += `- **เปิดราคาฝั่งต่อ:** ${r.initialFav === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน'} (อัตราต่อรอง ${r.initialOdds.a}:${r.initialOdds.b})\n`;
+        md += `- **ผู้ชนะ:** **${winnerText}**\n`;
+        md += `- **จำนวนจุดราคาที่บันทึก:** ${r.journey.length} จุด\n\n`;
+        md += `---\n\n`;
+        md += `## 📊 รายละเอียด Price Journey (Timeline)\n\n`;
+        md += `| step | เวลา | Source | 🔴 red raw | 🔴 red | 🔵 blue raw | 🔵 blue | resolvedFav | A:B resolved |\n`;
+        md += `|:---:|:---:|:---:|:---|:---:|:---|:---:|:---:|:---:|\n`;
         r.journey.forEach((s, idx) => {
             const absTs = r.recordedAt + s.offsetMs;
             const d = new Date(absTs); const pad = n => String(n).padStart(2,'0');
@@ -279,19 +308,8 @@
             const res = (s.resolvedA && s.resolvedB) ? `${s.resolvedA}:${s.resolvedB}` : '-';
             md += `| ${idx} | ${timeStr} | ${s.src} | ${rv} | ${redShort} | ${bv} | ${blueShort} | ${fav} | ${res} |\n`;
         });
-        md += `\n---\n\n`;
-        md += `## 💬 Human Readable Summary\n`;
-        const fs = r.journey[0];
-        if (fs) {
-            md += `- เปิดราคา 🔴 แดง: ${fs.red.isValid  ? `${fs.red.a}:${fs.red.b} (${fs.red.raw})`  : 'ไม่มีราคา'} | 🔵 น้ำเงิน: ${fs.blue.isValid ? `${fs.blue.a}:${fs.blue.b} (${fs.blue.raw})` : 'ไม่มีราคา'}\n`;
-        }
-        if (r.journey.length > 1) {
-            const last = r.journey[r.journey.length - 1];
-            md += `- ราคาสุดท้าย 🔴 แดง: ${last.red.isValid  ? `${last.red.a}:${last.red.b}`  : 'ไม่มีราคา'} | 🔵 น้ำเงิน: ${last.blue.isValid ? `${last.blue.a}:${last.blue.b}` : 'ไม่มีราคา'}\n`;
-        }
-        md += `- แชมป์จริง: ${r.winner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน'} (${winnerText})\n`;
-        md += `- จำนวนจุดราคา: ${r.journey.length} จุด | ระยะเวลา: ${hm(r.settledAt - r.recordedAt)}\n`;
-        return { content: md, filename: `${r.fightId}_${winnerText}_${r.journey.length}จุด.md`, record: r };
+        md += `\n`;
+        return { content: md, filename: `${r.fightId}_${r.winner === 'red' ? 'แดงชนะ' : 'น้ำเงินชนะ'}_${r.journey.length}จุด.md`, record: r };
     }
 
     function _saveText(filename, text) {
@@ -315,17 +333,40 @@
         _rec.library.splice(idx, 1); _recSaveLibrary(); _recRenderLibrary();
     }
 
-    function recorderExportBatch() {
+    function recorderClearLibrary() {
         if (_rec.library.length === 0) return;
-        let delay = 0;
-        _rec.library.forEach((r, i) => {
-            setTimeout(() => {
-                const md = _recBuildFightRecordForMd(r);
-                _saveText(md.filename, md.content);
-            }, delay);
-            delay += 350;
-        });
-        console.log(`%c[Recorder] 📦 ส่งออกทั้งหมด ${_rec.library.length} ไฟล์ .md (คั่น 350ms ต่อไฟล์)`, 'color:#22c55e;font-weight:bold;');
+        if (!confirm(`คุณต้องการเคลียร์ไฟท์ทั้งหมดในคลัง (${_rec.library.length} ไฟท์) หรือไม่?`)) return;
+        _rec.library = [];
+        _recSaveLibrary();
+        _recRenderLibrary();
+        console.log('%c[Recorder] 🗑️ เคลียร์คลังไฟท์ทั้งหมดเรียบร้อยแล้ว', 'color:#ef4444;font-weight:bold;');
+    }
+
+    function recorderCopyJsCode(idx) {
+        const r = _rec.library[idx];
+        if (!r) return;
+        const code = _recGenerateJsCode(r);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById(`recCopyBtn_${idx}`);
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✅ ก๊อปแล้ว!';
+                    btn.style.color = '#22c55e';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.color = '';
+                    }, 1500);
+                } else {
+                    alert('✅ คัดลอกโค้ด JavaScript สำหรับ data.js เรียบร้อยแล้ว!');
+                }
+            }).catch(err => {
+                console.error('Clipboard error:', err);
+                prompt('คัดลอกโค้ดด้านล่างนี้ไปวางใน data.js:', code);
+            });
+        } else {
+            prompt('คัดลอกโค้ดด้านล่างนี้ไปวางใน data.js:', code);
+        }
     }
 
     // ---------------- Render UI Recorder ----------------
@@ -387,9 +428,9 @@
     function _recRenderLibrary() {
         const listEl = document.getElementById('recorderLibraryList');
         const cntEl = document.getElementById('recLibraryCount');
-        const btnBatch = document.getElementById('recBatchExportBtn');
+        const btnClear = document.getElementById('recClearLibraryBtn') || document.getElementById('recBatchExportBtn');
         if (cntEl) cntEl.textContent = `${_rec.library.length} ไฟท์`;
-        if (btnBatch) btnBatch.disabled = _rec.library.length === 0;
+        if (btnClear) btnClear.disabled = _rec.library.length === 0;
         if (!listEl) return;
         if (_rec.library.length === 0) {
             listEl.innerHTML = `<div class="recorder-empty">ยังไม่มีไฟท์ที่บันทึก — กด "เริ่มบันทึก" แล้วป้อนราคาจริงหรือเปิดดึงราคาจากเว็บ</div>`;
@@ -412,8 +453,9 @@
     <span>${r.fighters.red} vs ${r.fighters.blue}</span>
   </div>
   <div class="rec-lib-btns">
-    <button onclick="recorderExportSingle(${idx})">⬇️ MD</button>
-    <button onclick="recorderDeleteSingle(${idx})" class="danger">🗑️</button>
+    <button id="recCopyBtn_${idx}" onclick="recorderCopyJsCode(${idx})" title="คัดลอกโค้ด JS ไปวางใน data.js ทันที">📋 ก๊อปโค้ด JS</button>
+    <button onclick="recorderExportSingle(${idx})" title="ดาวน์โหลดไฟล์ .md">⬇️ MD</button>
+    <button onclick="recorderDeleteSingle(${idx})" class="danger" title="ลบรายการนี้">🗑️</button>
   </div>
 </div>`;
         }).join('');
@@ -463,8 +505,9 @@
 
     window.recorderExportSingle = recorderExportSingle;
     window.recorderDeleteSingle = recorderDeleteSingle;
-    window.recorderExportBatch = recorderExportBatch;
-    window.__recInternal = { onPriceChange: recorderOnPriceChange, lib: _rec.library };
+    window.recorderClearLibrary = recorderClearLibrary;
+    window.recorderCopyJsCode = recorderCopyJsCode;
+    window.__recInternal = { onPriceChange: recorderOnPriceChange, lib: _rec.library, generateJsCode: _recGenerateJsCode };
 
 
     // =====================================================
@@ -620,12 +663,25 @@
         const cntEl = document.getElementById('btHistLibCount');
         if (cntEl) cntEl.textContent = `${_player.library.length} ไฟท์`;
         const sel = document.getElementById('btHistScenarioSelect');
-        if (sel && sel.options.length <= 1) {
+        if (sel) {
             sel.innerHTML = _player.library.length === 0
                 ? '<option value="">— ยังไม่มีข้อมูลใน data.js —</option>'
-                : _player.library.map((x, i) => `<option value="${i}">#${i+1} ${x.fightId} (${x.journey.length}จุด · ${x.winner==='red'?'🔴':'🔵'})</option>`).join('');
+                : '<option value="">— เลือก Scenario —</option>' + _player.library.map((x, i) => `<option value="${i}">#${i+1} ${x.fightId}</option>`).join('');
         }
-        if (_player.library.length > 0 && _player.scenarioIdx < 0) btHistLoadScenario(0);
+        // ✅ ถ้ายังไม่มี scenario โหลด → รีเซ็ตชื่อนักมวยบนหัวกลับเป็นค่าว่าง
+        if (!_player.loaded) {
+            const rn = document.getElementById('redFighterNameHeader');
+            const bn = document.getElementById('blueFighterNameHeader');
+            if (rn) rn.innerText = 'ฝั่งแดง';
+            if (bn) bn.innerText = 'ฝั่งน้ำเงิน';
+            const hdr = document.getElementById('liveOddsHeader');
+            if (hdr) hdr.innerHTML = '🔴 ปิดรับแทง (ไม่มีราคา)';
+            const rOdds = document.getElementById('redOddsText');
+            const bOdds = document.getElementById('blueOddsText');
+            if (rOdds) rOdds.innerText = '🔴 แดง: -';
+            if (bOdds) bOdds.innerText = '🔵 น้ำเงิน: -';
+            if (typeof updateFighterAvatarFavStatus === 'function') updateFighterAvatarFavStatus(null, true);
+        }
         btHistRenderButtons();
     }
 
@@ -685,7 +741,6 @@
         const redOk  = point.red  && point.red.isValid;
         const blueOk = point.blue && point.blue.isValid;
         if (!redOk || !blueOk) {
-            // แค่เลื่อน step ไปให้ถัดไปอัตโนมัติถ้าเป็น auto หรือ user กดถัดไป
             _player.stepIndex = i;
             btHistRenderScenarioInfo();
             btHistRenderTimeline();
@@ -693,27 +748,10 @@
             return;
         }
 
-        const snapSaved = _player.snapshots[i];
-        if (snapSaved && !isReset) {
-            _restoreWholeState(snapSaved.stateBefore);
-            _applyPriceToUIFromPoint(point, true);
-            const out = snapSaved.output; if (out) {}
-        } else {
-            if (isReset || !_player.snapshots[i]) {
-                const stateBefore = _captureWholeState();
-                _applyPriceToUIFromPoint(point, false);
-                if (typeof calculateAll === 'function') calculateAll();
-                const out = {
-                    netRed: parseFloat(((document.getElementById('netRed')||{}).innerText||'').replace(/[^0-9.\-]/g,'')) || 0,
-                    netBlue: parseFloat(((document.getElementById('netBlue')||{}).innerText||'').replace(/[^0-9.\-]/g,'')) || 0
-                };
-                _player.snapshots[i] = { stepIndex: i, stateBefore, output: out };
-            } else {
-                const stored = _player.snapshots[i];
-                _restoreWholeState(stored.stateBefore);
-                _applyPriceToUIFromPoint(point, true);
-            }
-        }
+        // อัปเดตราคาเข้าสู่ระบบและคำนวณกำไร/ขาดทุนโดยคงแผล (tickets) ของผู้ใช้ไว้ไม่ให้หาย
+        _applyPriceToUIFromPoint(point, false);
+        if (typeof calculateAll === 'function') calculateAll();
+
         _player.stepIndex = i;
         btHistRenderScenarioInfo();
         btHistRenderTimeline();
@@ -728,11 +766,14 @@
         }
     }
 
-    // ใหม่: ใช้ red/blue raw เป็น source of truth → ใส่ลง UI ทั้ง 3 ช่อง: #redOddsText / #blueOddsText / (fav, oddA, oddB) + liveOddsHeader
+    // ใหม่: ใช้ red/blue raw เป็น source of truth → ใส่ลง UI ทั้ง 3 ช่อง: #redOddsText / #blueOddsText / (fav, oddA, oddB) + (dogCorner, dogOddA/B) + liveOddsHeader
     function _applyPriceToUIFromPoint(point, silent) {
         const fEl = document.getElementById('liveFavCorner');
         const aEl = document.getElementById('liveOddA');
         const bEl = document.getElementById('liveOddB');
+        const dEl = document.getElementById('liveDogCorner');
+        const daEl = document.getElementById('dogOddA');
+        const dbEl = document.getElementById('dogOddB');
         const hdr = document.getElementById('liveOddsHeader');
         const rEl = document.getElementById('redOddsText');
         const blEl = document.getElementById('blueOddsText');
@@ -756,12 +797,33 @@
         if (fEl) fEl.value = resolvedFav;
         if (aEl) aEl.value = aRound;
         if (bEl) bEl.value = bRound;
+        // 2.1) ซิงค์ฝั่งรอง: corner = ตรงข้ามฝั่งต่อ, ODDS = ดึงมาจากฝั่งตรงข้ามจริงของ point (dog side's own odds), ไม่สลับ A:B ของฝั่งต่อ
+        const dogCornerExpected = resolvedFav === 'red' ? 'blue' : 'red';
+        if (dEl) dEl.value = dogCornerExpected;
+        const dogSide = dogCornerExpected === 'red' ? (point.red || {}) : (point.blue || {});
+        if (dogSide && dogSide.isValid && dogSide.a != null && dogSide.b != null) {
+            if (daEl) daEl.value = Math.round(dogSide.a);
+            if (dbEl) dbEl.value = Math.round(dogSide.b);
+        } else {
+            if (daEl) daEl.value = '';
+            if (dbEl) dbEl.value = '';
+        }
 
         // 3) Update header + currentPrice compat
         if (hdr) {
             const redShort  = point.red  && point.red.isValid  ? `🔴${point.red.a}:${point.red.b}`  : '🔴-';
             const blueShort = point.blue && point.blue.isValid ? `🔵${point.blue.a}:${point.blue.b}` : '🔵-';
-            hdr.innerHTML = `<span style="color:#00ff88;font-weight:bold;">📚 Scenario ${resolvedFav==='red'?'🔴':'🔵'} ต่อ ${aRound}:${bRound} (จุดที่ ${_player.stepIndex}) ${redShort} ${blueShort}</span>`;
+            
+            const is10_10 = (aRound === bRound);
+            const isBoth10_9 = (point.red && point.blue && point.red.a === 10 && point.red.b === 9 && point.blue.a === 10 && point.blue.b === 9);
+
+            if (is10_10) {
+                hdr.innerHTML = `<span style="color:#38bdf8;font-weight:bold;">⚖️ Scenario ราคาเสมอ (10:10) (จุดที่ ${_player.stepIndex}) ${redShort} ${blueShort}</span>`;
+            } else if (isBoth10_9) {
+                hdr.innerHTML = `<span style="color:#fbbf24;font-weight:bold;">⚡ Scenario ราคาเบียดสูสี (10:9 ทั้งคู่) (จุดที่ ${_player.stepIndex}) ${redShort} ${blueShort}</span>`;
+            } else {
+                hdr.innerHTML = `<span style="color:#00ff88;font-weight:bold;">📚 Scenario ${resolvedFav==='red'?'🔴':'🔵'} ต่อ ${aRound}:${bRound} (จุดที่ ${_player.stepIndex}) ${redShort} ${blueShort}</span>`;
+            }
         }
         window.currentPrice = { favCorner: resolvedFav, oddA: aRound, oddB: bRound };
     }
@@ -822,12 +884,106 @@
         _aggSave();
         btAggRender();
         if (autoShow) {
-            alert(`🏆 ผลไฟท์ ${_player.scenario.fightId}\n` +
-                  `${redName} vs ${blueName}\n` +
-                  `แชมป์จริง: ${winnerText}\n` +
-                  `PnL ของคุณ: ${pnl >= 0 ? '+' : ''}${pnl.toFixed(0)} บาท`);
+            btShowMatchResultModal({
+                fightId: _player.scenario.fightId,
+                fighters: _player.scenario.fighters || { red: redName, blue: blueName },
+                winner: w,
+                pnl: pnl,
+                strategy: window.currentStrategy,
+                ticketsCount: (window.tickets || []).length,
+                journey: _player.scenario.journey || []
+            });
         }
     }
+
+    // ==========================================
+    // 🏆 Match Result Modal Popup Functions
+    // ==========================================
+    function btShowMatchResultModal(data) {
+        const modal = document.getElementById('btMatchResultModal');
+        if (!modal) return;
+
+        const isRedWinner = data.winner === 'red';
+        const winnerName = isRedWinner 
+            ? ((data.fighters && data.fighters.red) ? data.fighters.red : 'ฝั่งแดง')
+            : ((data.fighters && data.fighters.blue) ? data.fighters.blue : 'ฝั่งน้ำเงิน');
+
+        // 1. Winner Banner Card
+        const banner = document.getElementById('btResultWinnerBanner');
+        const nameEl = document.getElementById('btResultWinnerName');
+        if (banner) {
+            banner.className = `bt-result-winner-banner ${isRedWinner ? 'corner-red' : 'corner-blue'}`;
+        }
+        if (nameEl) {
+            nameEl.textContent = winnerName;
+        }
+
+        // 2. PnL Value & Strategy Info
+        const pnlEl = document.getElementById('btResultPnlValue');
+        const stratEl = document.getElementById('btResultStrategyText');
+        const tixEl = document.getElementById('btResultTicketsText');
+
+        if (pnlEl) {
+            const pnl = data.pnl || 0;
+            pnlEl.textContent = `${pnl >= 0 ? '+' : ''}${Math.round(pnl).toLocaleString()} B`;
+            pnlEl.className = pnl >= 0 ? 'text-green' : 'text-red';
+        }
+        if (stratEl) {
+            stratEl.textContent = `กลยุทธ์: ${data.strategy || window.currentStrategy || '-'}`;
+        }
+        if (tixEl) {
+            tixEl.textContent = `จำนวนแผล: ${data.ticketsCount || 0} แผล`;
+        }
+
+        // 3. Price Journey List
+        const journeyList = document.getElementById('btResultJourneyList');
+        if (journeyList && Array.isArray(data.journey)) {
+            journeyList.innerHTML = data.journey.map((step, idx) => {
+                const stepLabel = idx === 0 ? 'ราคาเปิด (Open)' : `จุด #${idx}`;
+                const redTxt = step.red && step.red.raw ? step.red.raw : (step.red && step.red.isValid ? `🔴 HDP ${step.red.a}:${step.red.b}` : '🔴-');
+                const blueTxt = step.blue && step.blue.raw ? step.blue.raw : (step.blue && step.blue.isValid ? `🔵 ${step.blue.a}:${step.blue.b} HDP` : '🔵-');
+                return `
+                    <div class="bt-result-journey-row">
+                        <span class="bt-result-journey-label">${stepLabel}</span>
+                        <span class="bt-result-journey-odds">${redTxt} | ${blueTxt}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        modal.style.display = 'flex';
+
+        // Play sound if available
+        try {
+            if (typeof SoundEngine !== 'undefined') {
+                if (data.pnl >= 0 && SoundEngine.playGoldenBell) {
+                    SoundEngine.playGoldenBell();
+                } else if (SoundEngine.playHedgeSuccessSound) {
+                    SoundEngine.playHedgeSuccessSound();
+                }
+            }
+        } catch (e) {}
+    }
+
+    function btCloseMatchResultModal() {
+        const modal = document.getElementById('btMatchResultModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function btRandomNextScenarioFromModal() {
+        btCloseMatchResultModal();
+        btHistRandomScenario();
+    }
+
+    function btNextScenarioFromModal() {
+        btCloseMatchResultModal();
+        btHistNextScenario();
+    }
+
+    window.btShowMatchResultModal = btShowMatchResultModal;
+    window.btCloseMatchResultModal = btCloseMatchResultModal;
+    window.btRandomNextScenarioFromModal = btRandomNextScenarioFromModal;
+    window.btNextScenarioFromModal = btNextScenarioFromModal;
 
     function btHistSetAuto(on) {
         // 🔑 ใหม่: input เป็น **วินาที/จุด** (ทศนิยมได้) → แปลงเป็น ms โดย x 1000
@@ -865,10 +1021,15 @@
         const w = document.getElementById('btHistWinner');
         const st = document.getElementById('btHistStepInfo');
         const ti = document.getElementById('btHistTimeInfo');
-        if (f) {
-            const n = _player.scenario.fighters || { red: 'แดง', blue: 'น้ำเงิน' };
-            f.textContent = `${n.red} vs ${n.blue}`;
-        }
+        const n = _player.scenario.fighters || { red: 'แดง', blue: 'น้ำเงิน' };
+
+        // อัปเดตชื่อนักมวยในแถบหัว Fighter Card
+        const redNameHdr = document.getElementById('redFighterNameHeader');
+        const blueNameHdr = document.getElementById('blueFighterNameHeader');
+        if (redNameHdr && n.red) redNameHdr.innerText = n.red;
+        if (blueNameHdr && n.blue) blueNameHdr.innerText = n.blue;
+
+        if (f) f.textContent = `${n.red} vs ${n.blue}`;
         if (w) {
             const win = _player.scenario.winner;
             w.textContent = win === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';

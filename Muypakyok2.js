@@ -26,23 +26,95 @@ const standardBoxingOdds = [
 
 
 let previousPrice = null;
-let currentPrice = { favCorner: 'red', oddA: 3, oddB: 2 };
+let currentPrice = { favCorner: null, oddA: NaN, oddB: NaN };
 
 const priceTracker = (typeof PriceJourneyEngine !== 'undefined') 
     ? new PriceJourneyEngine.PriceJourneyTracker() 
     : null;
 
+let _syncingFavDog = false;
+
+function _oppositeCorner(c) {
+    return (c === 'red') ? 'blue' : ((c === 'blue') ? 'red' : '');
+}
+
+function _getFavInputs() {
+    return {
+        corner: document.getElementById('liveFavCorner'),
+        a: document.getElementById('liveOddA'),
+        b: document.getElementById('liveOddB')
+    };
+}
+
+function _getDogInputs() {
+    return {
+        corner: document.getElementById('liveDogCorner'),
+        a: document.getElementById('dogOddA'),
+        b: document.getElementById('dogOddB')
+    };
+}
+
+function parseOddsPreserveOrder(text) {
+    if (!text) return null;
+    const matches = String(text).match(/\d+(\.\d+)?/g);
+    if (!matches || matches.length < 2) return null;
+    const a = parseFloat(matches[0]);
+    const b = parseFloat(matches[1]);
+    if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) return null;
+    return { a, b };
+}
+
+function syncFavAndDogInputs(source) {
+    if (_syncingFavDog) return;
+    _syncingFavDog = true;
+    try {
+        const fav = _getFavInputs();
+        const dog = _getDogInputs();
+
+        const favCornerVal = (fav.corner && fav.corner.value) ? fav.corner.value : '';
+        const dogCornerVal = (dog.corner && dog.corner.value) ? dog.corner.value : '';
+
+        // กฎ: ฝั่งต่อ กับ ฝั่งรอง = ตรงข้ามเสมอ (ห้ามเป็นฝั่งเดียวกัน)
+        // แต่ราคา (A/B) = อิสระกัน — ไม่สลับ A/B ให้กันเอง
+        if ((source === 'fav' || !source) && (favCornerVal === 'red' || favCornerVal === 'blue')) {
+            if (dog.corner) dog.corner.value = _oppositeCorner(favCornerVal);
+        } else if ((source === 'dog' || !source) && (dogCornerVal === 'red' || dogCornerVal === 'blue')) {
+            if (fav.corner) fav.corner.value = _oppositeCorner(dogCornerVal);
+        }
+    } finally {
+        _syncingFavDog = false;
+    }
+}
+
+function onFavOrDogChange(source) {
+    syncFavAndDogInputs(source || 'fav');
+    if (typeof calculateAll === 'function') calculateAll();
+}
+window.onFavOrDogChange = onFavOrDogChange;
+
 window.onload = function() {
-    const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value || 'red';
-    const oddA = parseFloat((document.getElementById('liveOddA') || {}).value) || 1;
-    const oddB = parseFloat((document.getElementById('liveOddB') || {}).value) || 1;
-    currentPrice = { favCorner: liveFavCorner, oddA, oddB };
+    syncFavAndDogInputs();
+
+    const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
+    const rawA = (document.getElementById('liveOddA') || {}).value;
+    const rawB = (document.getElementById('liveOddB') || {}).value;
+    let oddA = (rawA !== undefined && rawA !== '') ? (parseFloat(rawA) || 0) : 0;
+    let oddB = (rawB !== undefined && rawB !== '') ? (parseFloat(rawB) || 0) : 0;
+
+    if ((liveFavCorner === 'red' || liveFavCorner === 'blue') && oddA > 0 && oddB > 0) {
+        if (oddA < oddB) { const tmp = oddA; oddA = oddB; oddB = tmp; }
+        currentPrice = { favCorner: liveFavCorner, oddA, oddB };
+    } else {
+        currentPrice = { favCorner: null, oddA: NaN, oddB: NaN };
+    }
     previousPrice = null;
 
     if (priceTracker) {
         priceTracker.reset();
-        const initialSnap = PriceJourneyEngine.createPriceSnapshot('', '', liveFavCorner, oddA, oddB);
-        priceTracker.appendSnapshot(initialSnap);
+        if (currentPrice.favCorner && currentPrice.oddA > 0 && currentPrice.oddB > 0) {
+            const initialSnap = PriceJourneyEngine.createPriceSnapshot('', '', currentPrice.favCorner, currentPrice.oddA, currentPrice.oddB);
+            priceTracker.appendSnapshot(initialSnap);
+        }
     }
 };
 
@@ -50,7 +122,11 @@ function getTicketPnL(t) {
     let a = parseFloat(t.a) || 1;
     let b = parseFloat(t.b) || 1;
     let stake = parseFloat(t.stake) || 0;
-    
+
+    if (a > 0 && b > 0 && a < b) {
+        const tmp = a; a = b; b = tmp;
+    }
+
     let winAmt = 0;
     let riskAmt = 0;
 
@@ -65,8 +141,13 @@ function getTicketPnL(t) {
 }
 
 function addTicket(corner = 'red', side = 'fav', a = 2, b = 1, stake = 100) {
+    let aa = parseFloat(a) || 2;
+    let bb = parseFloat(b) || 1;
+    if (aa > 0 && bb > 0 && aa < bb) {
+        const tmp = aa; aa = bb; bb = tmp;
+    }
     const id = Date.now() + Math.random();
-    tickets.push({ id, corner, side, a, b, stake });
+    tickets.push({ id, corner, side, a: aa, b: bb, stake });
     window._lastCreatedTicketId = id;
     renderTickets();
     calculateAll();
@@ -337,22 +418,32 @@ function executeOneClickHedge() {
 
 
 function handlePriceSnapshotUpdate() {
-    const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value;
-    const oddA = parseFloat((document.getElementById('liveOddA') || {}).value) || 1;
-    const oddB = parseFloat((document.getElementById('liveOddB') || {}).value) || 1;
+    syncFavAndDogInputs();
+    const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
+    const rawA = (document.getElementById('liveOddA') || {}).value;
+    const rawB = (document.getElementById('liveOddB') || {}).value;
+    let oddA = (rawA !== undefined && rawA !== '') ? (parseFloat(rawA) || 0) : 0;
+    let oddB = (rawB !== undefined && rawB !== '') ? (parseFloat(rawB) || 0) : 0;
+
+    const hasValidPrice = (liveFavCorner === 'red' || liveFavCorner === 'blue') && oddA > 0 && oddB > 0;
+    if (hasValidPrice && oddA < oddB) { const tmp = oddA; oddA = oddB; oddB = tmp; }
+
+    const favCornerNormalized = hasValidPrice ? liveFavCorner : null;
+    const oddANormalized = hasValidPrice ? oddA : NaN;
+    const oddBNormalized = hasValidPrice ? oddB : NaN;
 
     const isPriceChanged = (
-        currentPrice.favCorner !== liveFavCorner ||
-        currentPrice.oddA !== oddA ||
-        currentPrice.oddB !== oddB
+        currentPrice.favCorner !== favCornerNormalized ||
+        currentPrice.oddA !== oddANormalized ||
+        currentPrice.oddB !== oddBNormalized
     );
 
     if (isPriceChanged) {
         previousPrice = { ...currentPrice };
-        currentPrice = { favCorner: liveFavCorner, oddA, oddB };
+        currentPrice = { favCorner: favCornerNormalized, oddA: oddANormalized, oddB: oddBNormalized };
 
-        if (priceTracker) {
-            const snap = PriceJourneyEngine.createPriceSnapshot('', '', liveFavCorner, oddA, oddB);
+        if (priceTracker && hasValidPrice) {
+            const snap = PriceJourneyEngine.createPriceSnapshot('', '', favCornerNormalized, oddANormalized, oddBNormalized);
             priceTracker.appendSnapshot(snap);
         }
     }
@@ -479,11 +570,242 @@ function calculateAll() {
 
     syncPartialCutLossFromPortfolio(netRed, netBlue);
     calculateActionAndAdvisor(netRed, netBlue);
+    update3BulletUI();
+    updateEmergencyRescueUI();
+
+    // 🥊 อัปเดตไฟกระพริบที่ Avatar นวมของฝั่งที่เป็นต่อ (Favorite Flashing Indicator)
+    const liveFav = (document.getElementById('liveFavCorner') || {}).value;
+    const liveA = parseFloat((document.getElementById('liveOddA') || {}).value);
+    const isClosed = !liveA || isNaN(liveA) || liveA <= 0;
+    updateFighterAvatarFavStatus(liveFav, isClosed);
 
     // Hook สำหรับ extension ภายนอก (เช่น bt_hub_extension.js Recorder)
     // จะถูกเรียกทุกครั้งที่ calculateAll ทำงาน (ทั้งจากภายในไฟล์นี้และภายนอก)
     try { if (window.__postCalculateAllHook && typeof window.__postCalculateAllHook === 'function') window.__postCalculateAllHook(); } catch (e) {}
 }
+
+// 🥊 อัปเดตสถานะกระพริบขาว-สีเดิมของ Avatar นวม (แฟลชบอกฝั่งที่เป็นต่อ)
+function updateFighterAvatarFavStatus(favCorner, isClosed) {
+    const redAvatar = document.getElementById('redFighterAvatar');
+    const blueAvatar = document.getElementById('blueFighterAvatar');
+    if (!redAvatar || !blueAvatar) return;
+
+    if (isClosed || !favCorner || favCorner === 'draw' || favCorner === 'parity') {
+        redAvatar.classList.remove('is-fav');
+        blueAvatar.classList.remove('is-fav');
+        return;
+    }
+
+    const liveA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
+    const liveB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+
+    // ตรวจสอบกรณีราคาเสมอ 10/10 (1:1) หรือ ต่อ 10/9 ทั้งสองฝั่ง
+    const redOddsText  = (document.getElementById('redOddsText')  || {}).innerText || '';
+    const blueOddsText = (document.getElementById('blueOddsText') || {}).innerText || '';
+    const isBoth10_9 = (redOddsText.includes('10') && redOddsText.includes('9') && blueOddsText.includes('10') && blueOddsText.includes('9'));
+    const isParity10_10 = (liveA > 0 && liveB > 0 && liveA === liveB);
+
+    if (isParity10_10 || isBoth10_9) {
+        // ⚖️ ราคาเสมอ / เบียดสูสี ➔ อยู่นิ่งทั้งคู่ ไม่กระพริบ
+        redAvatar.classList.remove('is-fav');
+        blueAvatar.classList.remove('is-fav');
+        return;
+    }
+
+    if (favCorner === 'red') {
+        redAvatar.classList.add('is-fav');
+        blueAvatar.classList.remove('is-fav');
+    } else if (favCorner === 'blue') {
+        blueAvatar.classList.add('is-fav');
+        redAvatar.classList.remove('is-fav');
+    } else {
+        redAvatar.classList.remove('is-fav');
+        blueAvatar.classList.remove('is-fav');
+    }
+}
+window.updateFighterAvatarFavStatus = updateFighterAvatarFavStatus;
+
+// 💰 Update 3-Bullet Money Management UI (จัดสรรเงิน 3 กระสุน)
+function update3BulletUI() {
+    const totalCap = parseFloat((document.getElementById('totalCapital') || {}).value) || 0;
+    if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculate3BulletAllocation) {
+        const alloc = PriceJourneyEngine.calculate3BulletAllocation(totalCap);
+        const b1El = document.getElementById('b1Val');
+        const b2El = document.getElementById('b2Val');
+        const b3El = document.getElementById('b3Val');
+        if (b1El) b1El.textContent = `฿${alloc.bullet1.amount.toLocaleString()}`;
+        if (b2El) b2El.textContent = `฿${alloc.bullet2.amount.toLocaleString()}`;
+        if (b3El) b3El.textContent = `฿${alloc.bullet3.amount.toLocaleString()}`;
+        window._bulletAlloc = alloc;
+    }
+}
+
+// 💰 Apply 3-Bullet Stake to Quick-Bet Input Box
+function apply3BulletStake(bulletKey) {
+    const alloc = window._bulletAlloc || (typeof PriceJourneyEngine !== 'undefined' ? PriceJourneyEngine.calculate3BulletAllocation(parseFloat((document.getElementById('totalCapital')||{}).value)||0) : null);
+    if (!alloc || !alloc[bulletKey]) return;
+    const input = document.getElementById('qbBetAmount');
+    if (input) {
+        input.value = alloc[bulletKey].amount;
+        if (typeof qbUpdatePnLPreview === 'function') qbUpdatePnLPreview();
+    }
+}
+
+// 🚨 Update Live Emergency Rescue HUD Card
+function updateEmergencyRescueUI() {
+    const cardEl = document.getElementById('emergencyRescueCard');
+    if (!cardEl) return;
+
+    if (typeof PriceJourneyEngine === 'undefined' || !PriceJourneyEngine.calculateEmergencyRescue) return;
+
+    const redOddsEl  = document.getElementById('redOddsText');
+    const blueOddsEl = document.getElementById('blueOddsText');
+    const redParsed  = redOddsEl  ? qbParseOddsText(redOddsEl.innerText)  : null;
+    const blueParsed = blueOddsEl ? qbParseOddsText(blueOddsEl.innerText) : null;
+
+    const liveFav = (document.getElementById('liveFavCorner') || {}).value || 'red';
+    const liveA = parseFloat((document.getElementById('liveOddA') || {}).value) || 1;
+    const liveB = parseFloat((document.getElementById('liveOddB') || {}).value) || 1;
+    const totalCap = parseFloat((document.getElementById('totalCapital') || {}).value) || 0;
+
+    const redA  = redParsed  ? redParsed.a  : liveA;
+    const redB  = redParsed  ? redParsed.b  : liveB;
+    const blueA = blueParsed ? blueParsed.a : liveA;
+    const blueB = blueParsed ? blueParsed.b : liveB;
+
+    const rescue = PriceJourneyEngine.calculateEmergencyRescue({
+        tickets: tickets,
+        currentPrice: {
+            favCorner: liveFav,
+            oddA: liveA,
+            oddB: liveB,
+            redSide: { a: redA, b: redB, raw: redOddsEl ? redOddsEl.innerText : '' },
+            blueSide: { a: blueA, b: blueB, raw: blueOddsEl ? blueOddsEl.innerText : '' }
+        },
+        totalCapital: totalCap
+    });
+
+    window._currentRescuePlan = rescue;
+
+    // ✅ แสดงกล่องเสมอ (ไม่ซ่อน) — แต่ body จะโชว์เฉพาะเมื่อมีความเสี่ยงจริง
+    cardEl.classList.remove('hidden');
+
+    const badgeEl = document.getElementById('emgStatusBadge');
+    const bodyEl  = document.getElementById('emergencyRescueBody');
+    const iconEl  = document.getElementById('emgCollapseIcon');
+
+    if (!rescue || !rescue.isNeeded) {
+        // ไม่มีแผล / ไม่มีความเสี่ยง: badge = รอสถานการณ์, ซ่อน body
+        if (badgeEl) {
+            badgeEl.textContent = 'ยังไม่มีแผล';
+            badgeEl.style.background = 'rgba(100,116,139,0.25)';
+            badgeEl.style.color = '#94a3b8';
+            badgeEl.style.borderColor = 'rgba(100,116,139,0.4)';
+        }
+        if (bodyEl) bodyEl.style.display = 'none';
+        if (iconEl) iconEl.style.display = 'none';
+        _emgBodyExpanded = false;
+        return;
+    }
+
+    // มีความเสี่ยง: badge = พร้อมกู้ชีพ — ไม่บังคับขยาย ให้ผู้ใช้กดเองถ้าต้องการดูรายละเอียด
+    if (badgeEl) {
+        badgeEl.textContent = 'พร้อมกู้ชีพ';
+        badgeEl.style.background = '';
+        badgeEl.style.color = '';
+        badgeEl.style.borderColor = '';
+    }
+    if (iconEl) iconEl.style.display = '';
+
+    const holdEl    = document.getElementById('emgCurrentHold');
+    const planEl    = document.getElementById('emgPlanDetail');
+    const leadNameEl = document.getElementById('emgLeadingCornerName');
+    const leadResEl  = document.getElementById('emgLeadingResultText');
+    const dangNameEl = document.getElementById('emgDangerCornerName');
+    const dangResEl  = document.getElementById('emgDangerResultText');
+    const btnRescue  = document.getElementById('btnExecuteRescue');
+
+    const holdSideText   = rescue.holdingCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
+    const dangerSideText = rescue.dangerCorner  === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
+
+    if (holdEl) holdEl.innerHTML = `<span style="color:${rescue.holdingCorner==='red'?'#ef4444':'#3b82f6'}; font-weight:bold;">${holdSideText}</span> (เสี่ยงเสีย <span class="text-red">-${rescue.currentRiskLoss.toLocaleString()} B</span>)`;
+    if (planEl) planEl.textContent = rescue.actionSummary;
+    if (leadNameEl) leadNameEl.textContent = holdSideText;
+    if (leadResEl) {
+        leadResEl.textContent = `${rescue.finalLeadingProfit >= 0 ? '+' : ''}${rescue.finalLeadingProfit.toLocaleString()} B (เสมอตัว คืนทุน)`;
+        leadResEl.className = rescue.finalLeadingProfit >= 0 ? 'text-green' : 'text-red';
+    }
+    if (dangNameEl) dangNameEl.textContent = dangerSideText;
+    if (dangResEl) {
+        dangResEl.textContent = `${rescue.finalDangerProfit >= 0 ? '+' : ''}${rescue.finalDangerProfit.toLocaleString()} B (ล็อคขาดทุนไม่เกิน ${Math.abs(rescue.finalDangerProfit).toLocaleString()} B)`;
+        dangResEl.className = rescue.finalDangerProfit >= 0 ? 'text-green' : 'text-red';
+    }
+    if (btnRescue) {
+        btnRescue.innerHTML = `<span>🚨 กดยืนยันกู้ชีพทันที (แทงสวน ${dangerSideText} ${rescue.rescueStake.toLocaleString()} B)</span>`;
+    }
+}
+
+// 🚨 Execute 1-Click Emergency Rescue
+function executeEmergencyRescue() {
+    if (_isHedgeExecuting) {
+        return;
+    }
+    const plan = window._currentRescuePlan;
+    if (!plan || !plan.isNeeded) {
+        alert('⚠️ ไม่จำเป็นต้องกู้ชีพในสถานะปัจจุบัน');
+        return;
+    }
+    const rescueSnapshot = Object.assign({}, plan);
+    const { targetCorner, rescueStake } = rescueSnapshot;
+    if (rescueStake <= 0) {
+        alert('⚠️ ยอดกู้ชีพต้องมากกว่า 0 บาทครับ');
+        return;
+    }
+
+    _isHedgeExecuting = true;
+    clearTimeout(_hedgeExecutionTimer);
+    _hedgeExecutionTimer = setTimeout(() => {
+        _isHedgeExecuting = false;
+    }, 1500);
+
+    const betInput = document.getElementById('qbBetAmount');
+    if (betInput) {
+        betInput.value = rescueStake;
+        betInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    if (typeof qbTriggerAutoBet === 'function') {
+        qbTriggerAutoBet(targetCorner, rescueStake);
+    }
+
+    console.log(`%c[Emergency Rescue] 🚨 ส่งคำสั่งกู้ชีพสำเร็จ: ${targetCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน'} ยอด ${rescueStake.toLocaleString()} B`, 'color:#ea580c;font-weight:bold;');
+
+    try {
+        if (typeof SoundEngine !== 'undefined' && SoundEngine.playHedgeSuccessSound) {
+            SoundEngine.playHedgeSuccessSound();
+        }
+    } catch(e) {}
+}
+
+window.apply3BulletStake = apply3BulletStake;
+window.executeEmergencyRescue = executeEmergencyRescue;
+
+// 🚨 Toggle collapse/expand Emergency Rescue Body
+let _emgBodyExpanded = false;
+function toggleEmergencyRescueBody() {
+    const body = document.getElementById('emergencyRescueBody');
+    const icon = document.getElementById('emgCollapseIcon');
+    if (!body) return;
+    _emgBodyExpanded = !_emgBodyExpanded;
+    if (_emgBodyExpanded) {
+        body.style.display = '';
+        if (icon) icon.textContent = '▲ ย่อ';
+    } else {
+        body.style.display = 'none';
+        if (icon) icon.textContent = '▼ ขยาย';
+    }
+}
+window.toggleEmergencyRescueBody = toggleEmergencyRescueBody;
 
 function qbParseOddsText(text) {
     if (!text) return null;
@@ -506,8 +828,9 @@ function selectTargetPrice(a, b) {
     if (liveOddA && liveOddB) {
         liveOddA.value = a;
         liveOddB.value = b;
-        calculateAll();
     }
+    syncFavAndDogInputs('fav');
+    if (typeof calculateAll === 'function') calculateAll();
 }
 
 // แถบลำดับราคามวยมาตรฐาน 10:9 ➔ 4:1 (โชว์ไว้ตลอดเวลา + แทรกราคาจริงอัตโนมัติ)
@@ -629,17 +952,68 @@ function setAutoConfirm(val) {
     if (val && typeof SoundEngine !== 'undefined') SoundEngine.playGoldenBell();
 }
 
-function setPartialCalcVisible(val) {
+function togglePartialCutLossBody() {
     const body = document.getElementById('partialCutLossBody');
-    const toggleBox = document.getElementById('partialCalcToggle');
-    if (body) body.classList.toggle('hidden', !val);
-    if (toggleBox) {
-        const btnOff = toggleBox.querySelector('.btn-confirm.off');
-        const btnOn  = toggleBox.querySelector('.btn-confirm.on');
-        if (btnOff) btnOff.classList.toggle('active', !val);
-        if (btnOn)  btnOn.classList.toggle('active', val);
+    const icon = document.getElementById('partialCollapseIcon');
+    if (!body) return;
+    const isHidden = body.classList.contains('hidden') || body.style.display === 'none';
+    if (isHidden) {
+        body.classList.remove('hidden');
+        body.style.display = '';
+        if (icon) icon.textContent = '▲ ย่อ';
+    } else {
+        body.classList.add('hidden');
+        body.style.display = 'none';
+        if (icon) icon.textContent = '▼ ขยาย';
     }
 }
+
+function setPartialCalcVisible(val) {
+    const body = document.getElementById('partialCutLossBody');
+    const icon = document.getElementById('partialCollapseIcon');
+    if (body) {
+        body.classList.toggle('hidden', !val);
+        body.style.display = val ? '' : 'none';
+    }
+    if (icon) icon.textContent = val ? '▲ ย่อ' : '▼ ขยาย';
+}
+
+function toggleRecorderPanelBody() {
+    const body = document.getElementById('recorderPanelBody');
+    const icon = document.getElementById('recorderCollapseIcon');
+    if (!body) return;
+    const isHidden = body.style.display === 'none' || body.classList.contains('hidden');
+    if (isHidden) {
+        body.classList.remove('hidden');
+        body.style.display = '';
+        if (icon) icon.textContent = '▲ ย่อ';
+    } else {
+        body.classList.add('hidden');
+        body.style.display = 'none';
+        if (icon) icon.textContent = '▼ ขยาย';
+    }
+}
+
+function toggleBacktestHubBody() {
+    const body = document.getElementById('backtestHubBody');
+    const icon = document.getElementById('btHubCollapseIcon');
+    if (!body) return;
+    const isHidden = body.style.display === 'none' || body.classList.contains('hidden');
+    if (isHidden) {
+        body.classList.remove('hidden');
+        body.style.display = '';
+        if (icon) icon.textContent = '▲ ย่อ';
+    } else {
+        body.classList.add('hidden');
+        body.style.display = 'none';
+        if (icon) icon.textContent = '▼ ขยาย';
+    }
+}
+
+window.togglePartialCutLossBody = togglePartialCutLossBody;
+window.setPartialCalcVisible = setPartialCalcVisible;
+window.toggleRecorderPanelBody = toggleRecorderPanelBody;
+window.toggleBacktestHubBody = toggleBacktestHubBody;
 
 function _tryLocateConfirmButtons(rootEl) {
     const root = rootEl || document;
@@ -987,8 +1361,9 @@ function calculateActionAndAdvisor(netRed, netBlue) {
     const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value || 'red';
     const rawA = (document.getElementById('liveOddA') || {}).value;
     const rawB = (document.getElementById('liveOddB') || {}).value;
-    const oddA = parseFloat(rawA) || 0;
-    const oddB = parseFloat(rawB) || 0;
+    let oddA = parseFloat(rawA) || 0;
+    let oddB = parseFloat(rawB) || 0;
+    if (oddA > 0 && oddB > 0 && oddA < oddB) { const tmp = oddA; oddA = oddB; oddB = tmp; }
 
     const targetBox = document.getElementById('targetBox');
     const actionCard = document.getElementById('actionCard');
@@ -1263,8 +1638,10 @@ function renderAdvancePlanTable(netRed, netBlue) {
     let laggingProfit = Math.min(netRed, netBlue);
     let targetCornerText = leadingCorner === 'red' ? '🔵 น้ำเงิน' : '🔴 แดง';
 
-    const liveOddA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
-    const liveOddB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+    const rawLiveA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
+    const rawLiveB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+    let liveOddA = rawLiveA, liveOddB = rawLiveB;
+    if (liveOddA > 0 && liveOddB > 0 && liveOddA < liveOddB) { const t = liveOddA; liveOddA = liveOddB; liveOddB = t; }
     const liveRatio = (liveOddA > 0 && liveOddB > 0) ? (liveOddA / liveOddB) : 0;
 
     let targets = [];
@@ -1363,7 +1740,7 @@ function renderAdvancePlanTable(netRed, netBlue) {
 // ==========================================
 // ระบบดักฟังราคาและยอดเงินเรียลไทม์จาก Tampermonkey
 // ==========================================
-let isAutoSyncEnabled = true;
+let isAutoSyncEnabled = false;
 
 function toggleAutoSync() {
     isAutoSyncEnabled = !isAutoSyncEnabled;
@@ -1402,6 +1779,9 @@ muayChannel.onmessage = function(event) {
     const liveFavCorner = document.getElementById('liveFavCorner');
     const liveOddA = document.getElementById('liveOddA');
     const liveOddB = document.getElementById('liveOddB');
+    const liveDogCorner = document.getElementById('liveDogCorner');
+    const dogOddA = document.getElementById('dogOddA');
+    const dogOddB = document.getElementById('dogOddB');
     const totalCapitalInput = document.getElementById('totalCapital');
 
     if (data.balance !== undefined && data.balance !== null && totalCapitalInput) {
@@ -1422,6 +1802,10 @@ muayChannel.onmessage = function(event) {
         if (blueOddsEl) blueOddsEl.innerText = '🔵 น้ำเงิน: -';
         if (liveOddA) liveOddA.value = '';
         if (liveOddB) liveOddB.value = '';
+        if (dogOddA) dogOddA.value = '';
+        if (dogOddB) dogOddB.value = '';
+        if (liveFavCorner) liveFavCorner.value = '';
+        if (liveDogCorner) liveDogCorner.value = '';
 
         if (typeof calculateAll === 'function') calculateAll();
         return;
@@ -1432,7 +1816,21 @@ muayChannel.onmessage = function(event) {
     if (blueOddsEl && data.rawBlueText !== undefined) blueOddsEl.innerText = '🔵 น้ำเงิน: ' + (data.rawBlueText || '-');
 
     if (headerEl && data.displayText !== undefined) {
-        headerEl.innerHTML = '<span style="color: #00ff88; font-weight: bold;">⚡ ราคาเปิด: ' + data.displayText + '</span>';
+        let displayHtml = '';
+        const dText = String(data.displayText || '');
+        const rRaw = String(data.rawRedText || '');
+        const bRaw = String(data.rawBlueText || '');
+        const isBoth10_9 = (rRaw.includes('10') && rRaw.includes('9') && bRaw.includes('10') && bRaw.includes('9')) || dText.includes('10:9 ทั้งคู่');
+        const isParity10_10 = dText.includes('10:10') || dText.includes('เสมอ') || (data.oddA && data.oddB && data.oddA === data.oddB);
+
+        if (isParity10_10) {
+            displayHtml = '<span style="color: #38bdf8; font-weight: bold;">⚖️ ราคาเสมอ (10:10)</span>';
+        } else if (isBoth10_9) {
+            displayHtml = '<span style="color: #fbbf24; font-weight: bold;">⚡ ราคาเบียดสูสี (10:9 ทั้งคู่)</span>';
+        } else {
+            displayHtml = '<span style="color: #00ff88; font-weight: bold;">⚡ ราคาเปิด: ' + data.displayText + '</span>';
+        }
+        headerEl.innerHTML = displayHtml;
         
         // 🔔 เล่นเสียงระฆังแจ้งเตือนเมื่อราคาบนหัวเปลี่ยน
         if (typeof SoundEngine !== 'undefined') {
@@ -1440,10 +1838,49 @@ muayChannel.onmessage = function(event) {
         }
     }
 
-    if (liveFavCorner && liveOddA && liveOddB && data.favCorner && data.oddA && data.oddB) {
-        liveFavCorner.value = data.favCorner;
-        liveOddA.value = data.oddA;
-        liveOddB.value = data.oddB;
+    const redParsed = parseOddsPreserveOrder(data.rawRedText);
+    const blueParsed = parseOddsPreserveOrder(data.rawBlueText);
+
+    let finalFavCorner = null;
+    let finalFavA = 0, finalFavB = 0;
+    let finalDogCorner = null;
+    let finalDogA = 0, finalDogB = 0;
+    let resolved = false;
+
+    if (redParsed && blueParsed) {
+        const redFavLike = redParsed.a > redParsed.b;
+        const blueFavLike = blueParsed.a > blueParsed.b;
+
+        if (redFavLike && !blueFavLike) {
+            finalFavCorner = 'red'; finalFavA = redParsed.a; finalFavB = redParsed.b;
+            finalDogCorner = 'blue'; finalDogA = blueParsed.a; finalDogB = blueParsed.b;
+            resolved = true;
+        } else if (blueFavLike && !redFavLike) {
+            finalFavCorner = 'blue'; finalFavA = blueParsed.a; finalFavB = blueParsed.b;
+            finalDogCorner = 'red'; finalDogA = redParsed.a; finalDogB = redParsed.b;
+            resolved = true;
+        }
+    }
+
+    if (!resolved && data.favCorner && data.oddA && data.oddB) {
+        finalFavCorner = data.favCorner;
+        finalFavA = data.oddA;
+        finalFavB = data.oddB;
+        finalDogCorner = (data.favCorner === 'red') ? 'blue' : 'red';
+
+        if (finalDogCorner === 'red' && redParsed) { finalDogA = redParsed.a; finalDogB = redParsed.b; resolved = true; }
+        else if (finalDogCorner === 'blue' && blueParsed) { finalDogA = blueParsed.a; finalDogB = blueParsed.b; resolved = true; }
+    }
+
+    if (liveFavCorner && finalFavCorner && finalFavA > 0 && finalFavB > 0) {
+        liveFavCorner.value = finalFavCorner;
+        if (liveOddA) liveOddA.value = finalFavA;
+        if (liveOddB) liveOddB.value = finalFavB;
+    }
+    if (liveDogCorner && finalDogCorner && finalDogA > 0 && finalDogB > 0) {
+        liveDogCorner.value = finalDogCorner;
+        if (dogOddA) dogOddA.value = finalDogA;
+        if (dogOddB) dogOddB.value = finalDogB;
     }
 
     if (typeof calculateAll === 'function') {
@@ -1512,6 +1949,9 @@ function startSimulation(count = 0, intervalSec = 20) {
         const liveFavCornerEl = document.getElementById('liveFavCorner');
         const liveOddAEl = document.getElementById('liveOddA');
         const liveOddBEl = document.getElementById('liveOddB');
+        const liveDogCornerEl = document.getElementById('liveDogCorner');
+        const dogOddAEl = document.getElementById('dogOddA');
+        const dogOddBEl = document.getElementById('dogOddB');
 
         if (headerEl) {
             headerEl.innerHTML = '<span style="color: #00ff88; font-weight: bold;">⚡ [จำลอง #' + _simCount + '] ' + cornerText + ' ต่อ ' + favOdd.label + '</span>';
@@ -1522,6 +1962,10 @@ function startSimulation(count = 0, intervalSec = 20) {
         if (liveFavCornerEl) liveFavCornerEl.value = favCorner;
         if (liveOddAEl) liveOddAEl.value = oddA;
         if (liveOddBEl) liveOddBEl.value = oddB;
+        if (liveDogCornerEl) liveDogCornerEl.value = (favCorner === 'red' ? 'blue' : 'red');
+        // ราคาฝั่งรอง = ดึงค่าจากฝั่งตรงข้ามจริงของหน้าจอ (ฝั่งตรงข้ามแสดงผลเป็น dogOdd.b : dogOdd.a ตาม rawBlue/rawRed)
+        if (dogOddAEl) dogOddAEl.value = dogOdd.b;
+        if (dogOddBEl) dogOddBEl.value = dogOdd.a;
 
         if (typeof SoundEngine !== 'undefined') {
             SoundEngine.playGoldenBell();

@@ -27,14 +27,33 @@ function qbUpdatePnLPreview() {
     const redParsed  = redOddsText  ? qbParseOddsText(redOddsText.innerText)  : null;
     const blueParsed = blueOddsText ? qbParseOddsText(blueOddsText.innerText) : null;
 
-    // Fallback: ใช้ liveOddA/B ถ้า parse ไม่ได้
     const oddAFallback = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
     const oddBFallback = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+    const dogCornerEl = document.getElementById('liveDogCorner');
+    const dogCorner = dogCornerEl ? dogCornerEl.value : '';
+    const dogAFallbackRaw = parseFloat((document.getElementById('dogOddA') || {}).value) || 0;
+    const dogBFallbackRaw = parseFloat((document.getElementById('dogOddB') || {}).value) || 0;
 
-    const redA  = redParsed  ? redParsed.a  : oddAFallback;
-    const redB  = redParsed  ? redParsed.b  : oddBFallback;
-    const blueA = blueParsed ? blueParsed.a : oddAFallback;
-    const blueB = blueParsed ? blueParsed.b : oddBFallback;
+    const favNormalized = (oddAFallback > 0 && oddBFallback > 0)
+        ? { a: Math.max(oddAFallback, oddBFallback), b: Math.min(oddAFallback, oddBFallback) }
+        : null;
+    const dogNormalized = (dogAFallbackRaw > 0 && dogBFallbackRaw > 0)
+        ? { a: Math.max(dogAFallbackRaw, dogBFallbackRaw), b: Math.min(dogAFallbackRaw, dogBFallbackRaw) }
+        : null;
+
+    let redA = 0, redB = 0;
+    if (redParsed) { redA = redParsed.a; redB = redParsed.b; }
+    else if (favCorner === 'red' && favNormalized) { redA = favNormalized.a; redB = favNormalized.b; }
+    else if (dogCorner === 'red' && dogNormalized) { redA = dogNormalized.a; redB = dogNormalized.b; }
+    else if (favNormalized) { redA = favNormalized.a; redB = favNormalized.b; }
+    else if (dogNormalized) { redA = dogNormalized.a; redB = dogNormalized.b; }
+
+    let blueA = 0, blueB = 0;
+    if (blueParsed) { blueA = blueParsed.a; blueB = blueParsed.b; }
+    else if (favCorner === 'blue' && favNormalized) { blueA = favNormalized.a; blueB = favNormalized.b; }
+    else if (dogCorner === 'blue' && dogNormalized) { blueA = dogNormalized.a; blueB = dogNormalized.b; }
+    else if (favNormalized) { blueA = favNormalized.a; blueB = favNormalized.b; }
+    else if (dogNormalized) { blueA = dogNormalized.a; blueB = dogNormalized.b; }
 
     if (!redA || !redB || !blueA || !blueB) {
         redEl.textContent  = 'Win ? / Lose ?';
@@ -203,11 +222,39 @@ function qbTriggerAutoBet(corner, amountOverride) {
         oddA = parsedOdds.a;
         oddB = parsedOdds.b;
     } else {
-        // Fallback หากไม่มีข้อความที่หัวด้านบน
-        const oddAEl = document.getElementById('liveOddA');
-        const oddBEl = document.getElementById('liveOddB');
-        oddA = (oddAEl && oddAEl.value !== '') ? (parseFloat(oddAEl.value) || 2) : 2;
-        oddB = (oddBEl && oddBEl.value !== '') ? (parseFloat(oddBEl.value) || 1) : 1;
+        // Fallback 1: ดึงจากช่องฝั่งต่อ (fav) หรือ ฝั่งรอง (dog) ขึ้นอยู่กับว่ากดแทงฝั่งไหน
+        let useA = 2, useB = 1;
+        const favCornerEl = document.getElementById('liveFavCorner');
+        const favCornerVal = favCornerEl ? favCornerEl.value : '';
+        const favAEl = document.getElementById('liveOddA');
+        const favBEl = document.getElementById('liveOddB');
+        const dogCornerEl = document.getElementById('liveDogCorner');
+        const dogCornerVal = dogCornerEl ? dogCornerEl.value : '';
+        const dogAEl = document.getElementById('dogOddA');
+        const dogBEl = document.getElementById('dogOddB');
+
+        const faRaw = (favAEl && favAEl.value !== '') ? (parseFloat(favAEl.value) || 0) : 0;
+        const fbRaw = (favBEl && favBEl.value !== '') ? (parseFloat(favBEl.value) || 0) : 0;
+        const daRaw = (dogAEl && dogAEl.value !== '') ? (parseFloat(dogAEl.value) || 0) : 0;
+        const dbRaw = (dogBEl && dogBEl.value !== '') ? (parseFloat(dogBEl.value) || 0) : 0;
+
+        const fa = faRaw > 0 && fbRaw > 0 ? Math.max(faRaw, fbRaw) : 0;
+        const fb = faRaw > 0 && fbRaw > 0 ? Math.min(faRaw, fbRaw) : 0;
+        const da = daRaw > 0 && dbRaw > 0 ? Math.max(daRaw, dbRaw) : 0;
+        const db = daRaw > 0 && dbRaw > 0 ? Math.min(daRaw, dbRaw) : 0;
+
+        if (corner === favCornerVal && fa > 0 && fb > 0) {
+            useA = fa; useB = fb;
+        } else if (corner === dogCornerVal && da > 0 && db > 0) {
+            useA = da; useB = db;
+        } else if (fa > 0 && fb > 0) {
+            useA = fa; useB = fb;
+        } else if (da > 0 && db > 0) {
+            useA = da; useB = db;
+        } else {
+            useA = 2; useB = 1;
+        }
+        oddA = useA; oddB = useB;
     }
 
     // 4. เคลียร์ช่อง input หลังกดแทงเรียบร้อย

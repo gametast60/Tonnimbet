@@ -772,6 +772,185 @@
     };
   }
 
+  // 🚦 Safe Entry Radar Scanner (ประเมินความปลอดภัยของราคาเปิดไม้แรก)
+  function evaluateEntrySafety(oddA, oddB, favCorner = 'red') {
+    const a = parseFloat(oddA) || 1;
+    const b = parseFloat(oddB) || 1;
+    const ratio = a / b;
+
+    if (ratio <= 1.5) { // 10:9 (1.11), 5:4 (1.25), 11:8 (1.375), 3:2 (1.5)
+      return {
+        zone: 'SAFE',
+        color: '#22c55e',
+        badge: '🟢 Safe Entry Zone',
+        shortLabel: '🟢 ปลอดภัยสูง (10:9 - 3:2)',
+        desc: 'ราคาเปิดสูสี มีช่องว่าง (Spread) ให้ออกตัวทำกำไรได้ง่ายที่สุด',
+        riskLevel: 'LOW',
+        riskScore: 1
+      };
+    } else if (ratio <= 2.0) { // 5:3 (1.67), 7:4 (1.75), 2:1 (2.0)
+      return {
+        zone: 'FAIR',
+        color: '#f59e0b',
+        badge: '🟡 Fair Zone',
+        shortLabel: '🟡 ปานกลาง (7:4 - 2:1)',
+        desc: 'เข้าได้แต่ราคาเริ่มขยับ ควรเตรียมกระสุนไม้ 2 ไว้ออกตัวทันที',
+        riskLevel: 'MEDIUM',
+        riskScore: 3
+      };
+    } else { // 5:2 (2.5), 3:1, 4:1, 5:1, 10:1...
+      return {
+        zone: 'HIGH_RISK',
+        color: '#ef4444',
+        badge: '🔴 High-Risk Zone',
+        shortLabel: '🔴 เสี่ยงสูง (5:2 ขึ้นไป)',
+        desc: '⚠️ ราคาต่อแพงเกินไป เสี่ยงต่อการโดนหมัดเดียวพลิก ไม่แนะนำให้เปิดไม้แรก',
+        riskLevel: 'HIGH',
+        riskScore: 5
+      };
+    }
+  }
+
+  // 💰 3-Bullet Money Management Allocation (แบ่งเงิน 3 กระสุน)
+  function calculate3BulletAllocation(totalCapital = 1000) {
+    const cap = Math.max(0, parseFloat(totalCapital) || 0);
+    const bullet1 = Math.round(cap * 0.40); // 40% ไม้เปิดเกม
+    const bullet2 = Math.round(cap * 0.40); // 40% ไม้ออกตัว/สเกล
+    const bullet3 = cap - bullet1 - bullet2; // 20% สำรองฉุกเฉิน
+    return {
+      totalCapital: cap,
+      bullet1: { percent: 40, amount: bullet1, label: '🎯 ไม้ 1 (เปิดหัว 40%)' },
+      bullet2: { percent: 40, amount: bullet2, label: '🛡️ ไม้ 2 (ออกตัว 40%)' },
+      bullet3: { percent: 20, amount: bullet3, label: '🧯 ไม้ 3 (กู้ชีพ 20%)' }
+    };
+  }
+
+  // 🚨 Emergency Rescue & Loss-Capping Calculator (กล่องกู้ชีพฉุกเฉินคำนวณสด Real-time)
+  function calculateEmergencyRescue(params) {
+    const {
+      tickets = [],
+      currentPrice = { favCorner: 'red', oddA: 3, oddB: 2 },
+      totalCapital = 1000
+    } = params || {};
+
+    let netRed = 0;
+    let netBlue = 0;
+
+    // Helper calculate single ticket PnL
+    tickets.forEach(t => {
+      let a = parseFloat(t.a) || 1;
+      let b = parseFloat(t.b) || 1;
+      let stake = parseFloat(t.stake) || 0;
+      let winAmt = 0, riskAmt = 0;
+      if (t.side === 'fav') {
+        riskAmt = stake * (a / b);
+        winAmt = stake;
+      } else {
+        riskAmt = stake;
+        winAmt = stake * (a / b);
+      }
+      if (t.corner === 'red') {
+        netRed += winAmt;
+        netBlue -= riskAmt;
+      } else {
+        netBlue += winAmt;
+        netRed -= riskAmt;
+      }
+    });
+
+    if (tickets.length === 0) {
+      return { isNeeded: false, reason: 'ไม่มีแผลเปิดอยู่' };
+    }
+
+    // ถ้ายอดบวกทั้งสองข้างแล้ว แปลว่าล็อคกำไรเรียบร้อยแล้ว ไม่ต้องกู้ชีพ
+    if (netRed >= 0 && netBlue >= 0) {
+      return { isNeeded: false, isAlreadyProfitable: true, reason: 'พอร์ตล็อคกำไรแล้ว ปลอดภัย 100%' };
+    }
+
+    const leadingCorner = netRed > netBlue ? 'red' : 'blue';
+    const dangerCorner  = leadingCorner === 'red' ? 'blue' : 'red';
+    const leadingProfit = leadingCorner === 'red' ? netRed : netBlue;
+    const currentLoss   = leadingCorner === 'red' ? netBlue : netRed; // negative number
+
+    const liveFav = currentPrice.favCorner || 'red';
+
+    // 🎯 ใช้ราคาเฉพาะของฝั่งที่จะแทงสวน (dangerCorner) ตรงตามปุ่มฝั่งนั้นจริง 100%
+    let targetA = 1, targetB = 1;
+    if (dangerCorner === 'red') {
+      if (currentPrice.redSide && currentPrice.redSide.a && currentPrice.redSide.b) {
+        targetA = parseFloat(currentPrice.redSide.a) || 1;
+        targetB = parseFloat(currentPrice.redSide.b) || 1;
+      } else {
+        targetA = parseFloat(currentPrice.oddA) || 1;
+        targetB = parseFloat(currentPrice.oddB) || 1;
+      }
+    } else {
+      if (currentPrice.blueSide && currentPrice.blueSide.a && currentPrice.blueSide.b) {
+        targetA = parseFloat(currentPrice.blueSide.a) || 1;
+        targetB = parseFloat(currentPrice.blueSide.b) || 1;
+      } else {
+        targetA = parseFloat(currentPrice.oddA) || 1;
+        targetB = parseFloat(currentPrice.oddB) || 1;
+      }
+    }
+
+    const isHedgeFav = (liveFav === dangerCorner);
+    const targetRatio = targetA / targetB;
+    let rescueStake = 0;
+
+    if (isHedgeFav) {
+      // ฝั่งที่แทงสวนเป็นมวยต่อ: Win = S, Lose = S * (targetA / targetB)
+      // เรายอมสละ leadingProfit เมื่อแพ้เพื่อเซฟ -> S * (targetA / targetB) = leadingProfit
+      // => S = leadingProfit / (targetA / targetB)
+      rescueStake = leadingProfit / targetRatio;
+    } else {
+      // ฝั่งที่แทงสวนเป็นมวยรอง: Win = S * (targetA / targetB), Lose = S
+      // เรายอมสละ leadingProfit เมื่อแพ้เพื่อเซฟ -> S = leadingProfit
+      rescueStake = leadingProfit;
+    }
+
+    rescueStake = Math.max(10, Math.round(rescueStake));
+
+    // คำนวณผลลัพธ์พอร์ตหลังกู้ชีพ
+    let hedgeWin = 0, hedgeRisk = 0;
+    if (isHedgeFav) {
+      hedgeWin = rescueStake;
+      hedgeRisk = rescueStake * targetRatio;
+    } else {
+      hedgeWin = rescueStake * targetRatio;
+      hedgeRisk = rescueStake;
+    }
+
+    let finalLeading = leadingProfit - hedgeRisk;
+    let finalDanger  = currentLoss + hedgeWin;
+
+    const finalRed  = leadingCorner === 'red' ? finalLeading : finalDanger;
+    const finalBlue = leadingCorner === 'blue' ? finalLeading : finalDanger;
+
+    const lossSaved = Math.abs(currentLoss) - Math.abs(Math.min(0, finalDanger));
+    const lossCappedPct = Math.abs(currentLoss) > 0 ? (lossSaved / Math.abs(currentLoss)) * 100 : 0;
+
+    return {
+      isNeeded: true,
+      holdingCorner: leadingCorner,
+      dangerCorner: dangerCorner,
+      currentRiskLoss: Math.abs(Math.round(currentLoss)),
+      targetCorner: dangerCorner,
+      targetSide: isHedgeFav ? 'fav' : 'dog',
+      targetOddsA: targetA,
+      targetOddsB: targetB,
+      targetOddsLabel: `${targetA}:${targetB}`,
+      rescueStake: rescueStake,
+      finalRedProfit: Math.round(finalRed),
+      finalBlueProfit: Math.round(finalBlue),
+      finalLeadingProfit: Math.round(finalLeading),
+      finalDangerProfit: Math.round(finalDanger),
+      lossSavedAmount: Math.round(lossSaved),
+      lossCappedPercent: Math.round(Math.max(0, lossCappedPct)),
+      actionSummary: `แทงสวน ${dangerCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน'} (${isHedgeFav ? 'ต่อ' : 'รอง'} ${targetA}:${targetB}) ยอด ${rescueStake.toLocaleString()} บ.`
+    };
+  }
+
   // Exports for Node / Browser
   exports.STANDARD_BOXING_ODDS = STANDARD_BOXING_ODDS;
   exports.createBoxingPrice = createBoxingPrice;
@@ -786,6 +965,9 @@
   exports.calculateStrategyHedge = calculateStrategyHedge;
   exports.calculateMultiTargets = calculateMultiTargets;
   exports.evaluateEntrySignal = evaluateEntrySignal;
+  exports.evaluateEntrySafety = evaluateEntrySafety;
+  exports.calculate3BulletAllocation = calculate3BulletAllocation;
+  exports.calculateEmergencyRescue = calculateEmergencyRescue;
 
 })(typeof exports !== 'undefined' ? exports : (window.PriceJourneyEngine = {}));
 
