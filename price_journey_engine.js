@@ -24,6 +24,71 @@
   ];
 
 
+  // Shared Utility Functions for Independent Odds Model (STEP 1)
+  function deriveSideFromOdds(a, b) {
+    const numA = parseFloat(a) || 0;
+    const numB = parseFloat(b) || 0;
+    if (numA > numB) return 'fav';    // ต่อ
+    if (numA < numB) return 'dog';    // รอง
+    return 'even';                    // เสมอ
+  }
+
+  function deriveCornerStatuses(redObj, blueObj) {
+    // INDEPENDENT — no cross reference between red and blue
+    const red = redObj || {};
+    const blue = blueObj || {};
+    const redStatus = deriveSideFromOdds(red.a, red.b);
+    const blueStatus = deriveSideFromOdds(blue.a, blue.b);
+
+    // MARKET STATE (meta, not stored — derived)
+    const stateKey = `${redStatus}_${blueStatus}`;
+    const marketState = {
+      'fav_fav':   'BOTH_FAV',
+      'fav_even':  'RED_FAV_BLUE_EVEN',
+      'fav_dog':   'RED_FAV_BLUE_DOG',     // Classic case
+      'even_fav':  'RED_EVEN_BLUE_FAV',
+      'even_even': 'BOTH_EVEN',
+      'even_dog':  'RED_EVEN_BLUE_DOG',
+      'dog_fav':   'RED_DOG_BLUE_FAV',     // Classic case (inverted)
+      'dog_even':  'RED_DOG_BLUE_EVEN',
+      'dog_dog':   'BOTH_DOG'
+    }[stateKey] || 'UNKNOWN';
+
+    return { redStatus, blueStatus, marketState };
+  }
+
+  function isOddsValid(o) {
+    if (!o) return false;
+    const a = parseFloat(o.a);
+    const b = parseFloat(o.b);
+    return !isNaN(a) && !isNaN(b) && a > 0 && b > 0;
+  }
+
+  function cloneOdds(o) {
+    if (!o) return { a: NaN, b: NaN, raw: null };
+    return {
+      a: typeof o.a === 'number' ? o.a : parseFloat(o.a),
+      b: typeof o.b === 'number' ? o.b : parseFloat(o.b),
+      raw: o.raw !== undefined ? o.raw : null
+    };
+  }
+
+  // Canonical Model V2 — Independent RED/BLUE Odds
+  function createCanonicalPriceV2(red, blue) {
+    const redOdds = red ? { a: Number(red.a), b: Number(red.b), raw: red.raw || null } : { a: NaN, b: NaN, raw: null };
+    const blueOdds = blue ? { a: Number(blue.a), b: Number(blue.b), raw: blue.raw || null } : { a: NaN, b: NaN, raw: null };
+    const derived = deriveCornerStatuses(redOdds, blueOdds);
+    return {
+      red: redOdds,
+      blue: blueOdds,
+      derived: {
+        redStatus: derived.redStatus,
+        blueStatus: derived.blueStatus,
+        marketState: derived.marketState
+      }
+    };
+  }
+
   // Helper to create Fractional Boxing Price
   function createBoxingPrice(numerator, denominator) {
     return {
@@ -32,7 +97,7 @@
     };
   }
 
-  // Helper to create Canonical Price Representation
+  // LEGACY — USE createCanonicalPriceV2() / createPriceSnapshotV2() FOR NEW CODE
   function createCanonicalPrice(favoriteCorner, underdogCorner, favoritePrice, underdogPrice) {
     const priceKey = `${favoritePrice.numerator}/${favoritePrice.denominator}`;
     return {
@@ -120,17 +185,68 @@
     return matchIndex !== -1 ? matchIndex : null;
   }
 
-  // Create Price Snapshot
+  // Create Price Snapshot V2 (Independent RED/BLUE)
+  function createPriceSnapshotV2(rawRed, rawBlue, red, blue, timestamp = Date.now()) {
+    const redOdds = red ? { a: Number(red.a), b: Number(red.b), raw: rawRed || red.raw || null } : { a: NaN, b: NaN, raw: rawRed || null };
+    const blueOdds = blue ? { a: Number(blue.a), b: Number(blue.b), raw: rawBlue || blue.raw || null } : { a: NaN, b: NaN, raw: rawBlue || null };
+    const canonicalV2 = createCanonicalPriceV2(redOdds, blueOdds);
+
+    // Legacy fallback mapping
+    let legacyFavCorner = null;
+    let legacyA = NaN, legacyB = NaN;
+    if (canonicalV2.derived.redStatus === 'fav' && canonicalV2.derived.blueStatus !== 'fav') {
+      legacyFavCorner = 'red'; legacyA = redOdds.a; legacyB = redOdds.b;
+    } else if (canonicalV2.derived.blueStatus === 'fav' && canonicalV2.derived.redStatus !== 'fav') {
+      legacyFavCorner = 'blue'; legacyA = blueOdds.a; legacyB = blueOdds.b;
+    }
+
+    let legacyCanonical = null;
+    let stepIndex = null;
+    if (legacyFavCorner && legacyA > 0 && legacyB > 0) {
+      try {
+        const favP = createBoxingPrice(legacyA, legacyB);
+        const dogP = createBoxingPrice(legacyB, legacyA);
+        legacyCanonical = createCanonicalPrice(legacyFavCorner, legacyFavCorner === 'red' ? 'blue' : 'red', favP, dogP);
+        stepIndex = findBoxingPriceStepIndex(legacyA, legacyB);
+      } catch (e) {}
+    }
+
+    return {
+      id: `snap_${timestamp}_${Math.random().toString(36).substr(2, 5)}`,
+      timestamp,
+      raw: {
+        red: rawRed || '',
+        blue: rawBlue || ''
+      },
+      canonical: legacyCanonical || canonicalV2,
+      canonicalV2: canonicalV2,
+      derived: {
+        redStatus: canonicalV2.derived.redStatus,
+        blueStatus: canonicalV2.derived.blueStatus,
+        marketState: canonicalV2.derived.marketState,
+        priceStepIndex: stepIndex,
+        formattedPrice: `🔴 ${redOdds.a}:${redOdds.b} (${canonicalV2.derived.redStatus}) | 🔵 ${blueOdds.a}:${blueOdds.b} (${canonicalV2.derived.blueStatus})`
+      }
+    };
+  }
+
+  // LEGACY — USE createCanonicalPriceV2() / createPriceSnapshotV2() FOR NEW CODE
   function createPriceSnapshot(rawRed, rawBlue, favCorner, num, den, timestamp = Date.now()) {
     if (num <= 0 || den <= 0) {
       throw new Error('Invalid fraction in createPriceSnapshot');
     }
 
+    // LEGACY: Derived binary pair
     const favoritePrice = createBoxingPrice(num, den);
     const underdogPrice = createBoxingPrice(den, num);
     const underdogCorner = favCorner === 'red' ? 'blue' : 'red';
     const canonical = createCanonicalPrice(favCorner, underdogCorner, favoritePrice, underdogPrice);
     const stepIndex = findBoxingPriceStepIndex(num, den);
+
+    // DUAL SUPPORT: Populate canonicalV2 in parallel
+    const redObj = favCorner === 'red' ? { a: num, b: den, raw: rawRed || `${num}:${den}` } : { a: den, b: num, raw: rawRed || `${den}:${num}` };
+    const blueObj = favCorner === 'blue' ? { a: num, b: den, raw: rawBlue || `${num}:${den}` } : { a: den, b: num, raw: rawBlue || `${den}:${num}` };
+    const canonicalV2 = createCanonicalPriceV2(redObj, blueObj);
 
     return {
       id: `snap_${timestamp}_${Math.random().toString(36).substr(2, 5)}`,
@@ -140,8 +256,12 @@
         blue: rawBlue || ''
       },
       canonical,
+      canonicalV2,
       derived: {
         priceStepIndex: stepIndex,
+        redStatus: canonicalV2.derived.redStatus,
+        blueStatus: canonicalV2.derived.blueStatus,
+        marketState: canonicalV2.derived.marketState,
         formattedPrice: `${favCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน'} ต่อ ${canonical.priceKey}`
       }
     };
@@ -181,28 +301,51 @@
       }
 
       if (!prev) {
+        const currentDerived = curr.canonicalV2 ? curr.canonicalV2.derived : curr.derived;
         return {
           priceHistory: [...this.priceHistory],
           previousSnapshot: null,
-          currentSnapshot: curr,
+          currentSnapshot: { ...curr, derived: currentDerived },
           movementDirection: 'UNCHANGED',
           stepDistance: 0,
+          stepRedIndex: this.getCornerStepIndex(curr, 'red'),
+          stepBlueIndex: this.getCornerStepIndex(curr, 'blue'),
+          movementRed: 'UNCHANGED',
+          movementBlue: 'UNCHANGED',
           timeElapsedMs: 0,
           pace: 'stagnant',
           journeyPattern: curr.canonical.priceKey
         };
       }
 
-      // Calculate Step Distance & Movement Direction
-      const currIdx = curr.derived.priceStepIndex;
-      const prevIdx = prev.derived.priceStepIndex;
+      const stepRedIndex = this.getCornerStepIndex(curr, 'red');
+      const stepBlueIndex = this.getCornerStepIndex(curr, 'blue');
+      const previousRedIndex = this.getCornerStepIndex(prev, 'red');
+      const previousBlueIndex = this.getCornerStepIndex(prev, 'blue');
+      const getMovement = (currentIndex, previousIndex) => {
+        if (currentIndex === null || previousIndex === null) return 'UNCHANGED';
+        if (currentIndex > previousIndex) return 'UP';
+        if (currentIndex < previousIndex) return 'DOWN';
+        return 'UNCHANGED';
+      };
+      const movementRed = getMovement(stepRedIndex, previousRedIndex);
+      const movementBlue = getMovement(stepBlueIndex, previousBlueIndex);
 
       let movementDirection = 'UNCHANGED';
       let stepDistance = 0;
+      const currIdx = stepRedIndex !== null ? stepRedIndex : stepBlueIndex;
+      const prevIdx = previousRedIndex !== null ? previousRedIndex : previousBlueIndex;
 
       if (currIdx !== null && prevIdx !== null) {
         let adjustedPrevIdx = prevIdx;
-        if (curr.canonical.favoriteCorner !== prev.canonical.favoriteCorner) {
+        const currDerived = curr.canonicalV2 ? curr.canonicalV2.derived : curr.derived;
+        const prevDerived = prev.canonicalV2 ? prev.canonicalV2.derived : prev.derived;
+        const isClassicFlip =
+          currDerived.redStatus === 'fav' && currDerived.blueStatus === 'dog' &&
+          prevDerived.redStatus === 'dog' && prevDerived.blueStatus === 'fav' ||
+          currDerived.redStatus === 'dog' && currDerived.blueStatus === 'fav' &&
+          prevDerived.redStatus === 'fav' && prevDerived.blueStatus === 'dog';
+        if (isClassicFlip) {
           adjustedPrevIdx = -prevIdx; // Corner flip inversion
         }
 
@@ -217,8 +360,12 @@
           stepDistance = 0;
         }
       } else {
-        const currRatio = curr.canonical.favoritePrice.numerator / curr.canonical.favoritePrice.denominator;
-        const prevRatio = prev.canonical.favoritePrice.numerator / prev.canonical.favoritePrice.denominator;
+        const getRatio = (snapshot, corner) => {
+          const odds = snapshot.canonicalV2 && snapshot.canonicalV2[corner];
+          return odds && odds.a > 0 && odds.b > 0 ? Math.max(odds.a, odds.b) / Math.min(odds.a, odds.b) : 0;
+        };
+        const currRatio = getRatio(curr, stepRedIndex !== null ? 'red' : 'blue');
+        const prevRatio = getRatio(prev, previousRedIndex !== null ? 'red' : 'blue');
         if (currRatio > prevRatio) {
           movementDirection = 'UP';
         } else if (currRatio < prevRatio) {
@@ -239,17 +386,28 @@
       }
 
       const journeyPattern = this.priceHistory.map(s => s.canonical.priceKey).join(' -> ');
+      const currentDerived = curr.canonicalV2 ? curr.canonicalV2.derived : curr.derived;
 
       return {
         priceHistory: [...this.priceHistory],
         previousSnapshot: prev,
-        currentSnapshot: curr,
+        currentSnapshot: { ...curr, derived: currentDerived },
         movementDirection,
         stepDistance,
+        stepRedIndex,
+        stepBlueIndex,
+        movementRed,
+        movementBlue,
         timeElapsedMs,
         pace,
         journeyPattern
       };
+    }
+
+    getCornerStepIndex(snapshot, corner) {
+      const odds = snapshot && snapshot.canonicalV2 && snapshot.canonicalV2[corner];
+      if (!odds || !(odds.a > 0) || !(odds.b > 0)) return null;
+      return findBoxingPriceStepIndex(Math.max(odds.a, odds.b), Math.min(odds.a, odds.b));
     }
   }
 
@@ -257,6 +415,17 @@
   function evaluateContext(journeyState, userPositionState, userMainSide, netRedPnL, netBluePnL, isHedgeReady = false) {
     let positionState = userPositionState || 'NO_POSITION';
     let marketContext = 'NEUTRAL_CONTEXT';
+
+    const getCornerContext = (side, movement) => {
+      if (side === 'even' || movement === 'UNCHANGED') return 'NEUTRAL_CONTEXT';
+      const isFavorable = (side === 'fav' && movement === 'UP') || (side === 'dog' && movement === 'DOWN');
+      return isFavorable ? 'FAVORABLE_CONTEXT' : 'UNFAVORABLE_CONTEXT';
+    };
+    const currentDerived = journeyState && journeyState.currentSnapshot
+      ? (journeyState.currentSnapshot.canonicalV2 ? journeyState.currentSnapshot.canonicalV2.derived : journeyState.currentSnapshot.derived)
+      : null;
+    const redContext = getCornerContext(currentDerived && currentDerived.redStatus, journeyState && journeyState.movementRed);
+    const blueContext = getCornerContext(currentDerived && currentDerived.blueStatus, journeyState && journeyState.movementBlue);
 
     if (positionState === 'NO_POSITION') {
       marketContext = 'NEUTRAL_CONTEXT';
@@ -268,21 +437,7 @@
       if (!journeyState || journeyState.movementDirection === 'UNCHANGED') {
         marketContext = 'NEUTRAL_CONTEXT';
       } else {
-        const isUserHoldingRed = (userMainSide === 'red');
-        const isUserHoldingBlue = (userMainSide === 'blue');
-        const favCorner = journeyState.currentSnapshot.canonical.favoriteCorner;
-        const movement = journeyState.movementDirection;
-
-        let isFavMovingUp = (movement === 'UP');
-
-        if ((isUserHoldingRed && favCorner === 'red' && isFavMovingUp) ||
-            (isUserHoldingBlue && favCorner === 'blue' && isFavMovingUp) ||
-            (isUserHoldingRed && favCorner === 'blue' && !isFavMovingUp) ||
-            (isUserHoldingBlue && favCorner === 'red' && !isFavMovingUp)) {
-          marketContext = 'FAVORABLE_CONTEXT';
-        } else {
-          marketContext = 'UNFAVORABLE_CONTEXT';
-        }
+        marketContext = userMainSide === 'red' ? redContext : blueContext;
       }
     }
 
@@ -296,7 +451,8 @@
     return {
       marketContext,
       positionState,
-      portfolioContext
+      portfolioContext,
+      v2: { redContext, blueContext }
     };
   }
 
@@ -443,6 +599,8 @@
       leadingProfit = 0,
       laggingProfit = 0,
       isHedgeByFav = false,
+      targetSide = null,
+      targetOdds = null,
       targetRatio = 1,
       skewTarget = 'auto',       // 'auto' | 'red' | 'blue' — ฝั่งไหนได้ 70% (skew_runner)
       breakevenTarget = 'auto'   // 'auto' | 'red' | 'blue' — ฝั่งไหนได้กำไร (breakeven)
@@ -459,7 +617,12 @@
     const actualNetRed  = leadingCorner === 'red' ? leadingProfit : laggingProfit;
     const actualNetBlue = leadingCorner === 'blue' ? leadingProfit : laggingProfit;
     const originalTargetCorner = leadingCorner === 'red' ? 'blue' : 'red';
-    const favCorner = isHedgeByFav ? originalTargetCorner : leadingCorner;
+    const derivedTargetSide = targetSide || (targetOdds ? deriveSideFromOdds(targetOdds.a, targetOdds.b) : null);
+    const favCorner = derivedTargetSide === 'fav'
+      ? originalTargetCorner
+      : derivedTargetSide === 'dog'
+        ? leadingCorner
+        : (isHedgeByFav ? originalTargetCorner : leadingCorner);
 
     if (strategy === 'equal') {
       // กลยุทธ์เฉลี่ยกำไรเท่ากันทั้ง 2 ฝั่ง
@@ -733,8 +896,8 @@
   }
 
   // Entry Signal Scanner for Beginners (คำแนะนำการเข้าไม้แรกสำหรับมือใหม่)
-  function evaluateEntrySignal(favCorner, oddA, oddB, balance = 20000) {
-    const ratio = (oddA && oddB) ? (oddA / oddB) : 1.5;
+  function evaluateEntrySignal(favCorner, oddA, oddB, balance = 20000, redOdds = null, blueOdds = null) {
+    const ratio = (oddA && oddB) ? (Math.max(oddA, oddB) / Math.min(oddA, oddB)) : 1.5;
     const recommendedFirstBet = Math.min(Math.max(50, Math.round(balance * 0.05)), 1000); // 5% ของพอร์ต ไม่เกิน 1000
 
     let signalType = 'WAIT';
@@ -745,6 +908,7 @@
 
     if (ratio >= 2.5) {
       // ราคาต่อสูง 5/2, 3/1, 4/1, 5/1 -> จังหวะรองได้เปรียบสูง (High EV Underdog Entry)
+      // Legacy single-favorite presentation; V2 callers use redSignal/blueSignal below.
       const dogCorner = favCorner === 'red' ? 'blue' : 'red';
       signalType = 'SNIPER_DOG';
       title = `🎯 จังหวะสวนรองได้เปรียบ [${dogCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน'}]`;
@@ -762,13 +926,26 @@
       desc = `แนะนำเปิดไม้แรกเริ่มต้นไม่เกิน ${recommendedFirstBet.toLocaleString()} B เพื่อให้เหลืองบไว้ออกตัวล็อคกำไร`;
     }
 
+    const makeCornerSignal = (corner, a, b) => {
+      const status = deriveSideFromOdds(a, b);
+      const cornerRatio = (a > 0 && b > 0) ? Math.max(a, b) / Math.min(a, b) : 1;
+      let signal = 'NEUTRAL';
+      if (status === 'fav') signal = cornerRatio >= 2.5 ? 'SHORT' : 'LONG';
+      if (status === 'dog') signal = cornerRatio >= 2.5 ? 'STRONG_SHORT' : 'SHORT';
+      return { corner, status, signal, odds: `${a}:${b}` };
+    };
+    redOdds = redOdds || { a: oddA, b: oddB };
+    blueOdds = blueOdds || { a: oddA, b: oddB };
+
     return {
       signalType,
       title,
       desc,
       suggestedSide,
       suggestedOdds,
-      recommendedFirstBet
+      recommendedFirstBet,
+      redSignal: makeCornerSignal('red', redOdds.a, redOdds.b),
+      blueSignal: makeCornerSignal('blue', blueOdds.a, blueOdds.b)
     };
   }
 
@@ -847,7 +1024,8 @@
         winAmt = stake;
       } else {
         riskAmt = stake;
-        winAmt = stake * (a / b);
+        const dogRatio = (a > 0 && b > 0) ? (a >= b ? (a / b) : (b / a)) : 1;
+        winAmt = stake * dogRatio;
       }
       if (t.corner === 'red') {
         netRed += winAmt;
@@ -872,30 +1050,19 @@
     const leadingProfit = leadingCorner === 'red' ? netRed : netBlue;
     const currentLoss   = leadingCorner === 'red' ? netBlue : netRed; // negative number
 
-    const liveFav = currentPrice.favCorner || 'red';
-
     // 🎯 ใช้ราคาเฉพาะของฝั่งที่จะแทงสวน (dangerCorner) ตรงตามปุ่มฝั่งนั้นจริง 100%
     let targetA = 1, targetB = 1;
     if (dangerCorner === 'red') {
-      if (currentPrice.redSide && currentPrice.redSide.a && currentPrice.redSide.b) {
-        targetA = parseFloat(currentPrice.redSide.a) || 1;
-        targetB = parseFloat(currentPrice.redSide.b) || 1;
-      } else {
-        targetA = parseFloat(currentPrice.oddA) || 1;
-        targetB = parseFloat(currentPrice.oddB) || 1;
-      }
+      targetA = parseFloat(currentPrice.redSide && currentPrice.redSide.a) || parseFloat(currentPrice.oddA) || 1;
+      targetB = parseFloat(currentPrice.redSide && currentPrice.redSide.b) || parseFloat(currentPrice.oddB) || 1;
     } else {
-      if (currentPrice.blueSide && currentPrice.blueSide.a && currentPrice.blueSide.b) {
-        targetA = parseFloat(currentPrice.blueSide.a) || 1;
-        targetB = parseFloat(currentPrice.blueSide.b) || 1;
-      } else {
-        targetA = parseFloat(currentPrice.oddA) || 1;
-        targetB = parseFloat(currentPrice.oddB) || 1;
-      }
+      targetA = parseFloat(currentPrice.blueSide && currentPrice.blueSide.a) || parseFloat(currentPrice.oddA) || 1;
+      targetB = parseFloat(currentPrice.blueSide && currentPrice.blueSide.b) || parseFloat(currentPrice.oddB) || 1;
     }
 
-    const isHedgeFav = (liveFav === dangerCorner);
-    const targetRatio = targetA / targetB;
+    const dangerSide = deriveSideFromOdds(targetA, targetB);
+    const isHedgeFav = dangerSide === 'fav';
+    const targetRatio = Math.max(targetA, targetB) / Math.min(targetA, targetB);
     let rescueStake = 0;
 
     if (isHedgeFav) {
@@ -936,7 +1103,7 @@
       dangerCorner: dangerCorner,
       currentRiskLoss: Math.abs(Math.round(currentLoss)),
       targetCorner: dangerCorner,
-      targetSide: isHedgeFav ? 'fav' : 'dog',
+      targetSide: dangerSide,
       targetOddsA: targetA,
       targetOddsB: targetB,
       targetOddsLabel: `${targetA}:${targetB}`,
@@ -955,9 +1122,15 @@
   exports.STANDARD_BOXING_ODDS = STANDARD_BOXING_ODDS;
   exports.createBoxingPrice = createBoxingPrice;
   exports.createCanonicalPrice = createCanonicalPrice;
+  exports.createCanonicalPriceV2 = createCanonicalPriceV2;
   exports.parseRawWebsitePrice = parseRawWebsitePrice;
   exports.findBoxingPriceStepIndex = findBoxingPriceStepIndex;
   exports.createPriceSnapshot = createPriceSnapshot;
+  exports.createPriceSnapshotV2 = createPriceSnapshotV2;
+  exports.deriveSideFromOdds = deriveSideFromOdds;
+  exports.deriveCornerStatuses = deriveCornerStatuses;
+  exports.isOddsValid = isOddsValid;
+  exports.cloneOdds = cloneOdds;
   exports.PriceJourneyTracker = PriceJourneyTracker;
   exports.evaluateContext = evaluateContext;
   exports.runDecisionEngine = runDecisionEngine;

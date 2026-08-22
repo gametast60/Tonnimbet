@@ -51,32 +51,41 @@
         return { a: Math.round(a), b: Math.round(b), isValid: true, raw };
     }
 
-    // 🔧 Derive favCorner / oddA / oddB (resolved unified view จาก red + blue)
-    //    กฎ: ฝั่งไหนเป็น fav (a/b >= 1) เป็นฝั่งต่อ — ถ้าเท่ากันให้ใช้ red เป็น default
+    // LEGACY FIELD RESOLVER — USE return.v2 FOR NEW CODE; resolvedFav is compat only.
     function _resolveFavFromSides(red, blue) {
+        const derive = (window.PriceJourneyEngine && window.PriceJourneyEngine.deriveCornerStatuses)
+            ? window.PriceJourneyEngine.deriveCornerStatuses
+            : (r, b) => ({
+                redStatus: r.a > r.b ? 'fav' : (r.a < r.b ? 'dog' : 'even'),
+                blueStatus: b.a > b.b ? 'fav' : (b.a < b.b ? 'dog' : 'even'),
+                marketState: 'UNKNOWN'
+            });
+        const v2 = {
+            red: red || { a: NaN, b: NaN, raw: null },
+            blue: blue || { a: NaN, b: NaN, raw: null }
+        };
+        v2.derived = derive(v2.red, v2.blue);
         const redOk = red && red.isValid, blueOk = blue && blue.isValid;
         if (!redOk || !blueOk) {
             const f = document.getElementById('liveFavCorner');
             const a = parseFloat((document.getElementById('liveOddA') || {}).value);
             const b = parseFloat((document.getElementById('liveOddB') || {}).value);
             if (f && (a > 0) && (b > 0)) {
-                const na = Math.max(a, b), nb = Math.min(a, b);
-                return { resolvedFav: (f.value === 'blue' ? 'blue' : (f.value === 'red' ? 'red' : null)), resolvedA: Math.round(na), resolvedB: Math.round(nb) };
+                return { resolvedFav: (f.value === 'blue' ? 'blue' : (f.value === 'red' ? 'red' : null)), resolvedA: Math.round(a), resolvedB: Math.round(b), v2 };
             }
             const d = document.getElementById('liveDogCorner');
             const da = parseFloat((document.getElementById('dogOddA') || {}).value);
             const db = parseFloat((document.getElementById('dogOddB') || {}).value);
             if (d && (da > 0) && (db > 0)) {
                 const derivedFav = d.value === 'red' ? 'blue' : (d.value === 'blue' ? 'red' : null);
-                const na = Math.max(da, db), nb = Math.min(da, db);
-                return { resolvedFav: derivedFav, resolvedA: Math.round(na), resolvedB: Math.round(nb) };
+                return { resolvedFav: derivedFav, resolvedA: Math.round(da), resolvedB: Math.round(db), v2 };
             }
-            return { resolvedFav: null, resolvedA: null, resolvedB: null };
+            return { resolvedFav: null, resolvedA: null, resolvedB: null, v2 };
         }
         const redRatio = red.a / red.b;
         const blueRatio = blue.a / blue.b;
-        if (redRatio >= blueRatio) return { resolvedFav: 'red',  resolvedA: red.a,  resolvedB: red.b  };
-        else                     return { resolvedFav: 'blue', resolvedA: blue.a, resolvedB: blue.b };
+        if (redRatio >= blueRatio) return { resolvedFav: 'red', resolvedA: red.a, resolvedB: red.b, v2 };
+        return { resolvedFav: 'blue', resolvedA: blue.a, resolvedB: blue.b, v2 };
     }
 
     function _recGetLiveSourceHint() {
@@ -98,7 +107,7 @@
         // ❌ ถ้าใดฝั่งหนึ่งยังไม่มีราคา (invalid) ข้ามจุดนี้เลย — รอราคาครบ
         if (!red.isValid || !blue.isValid) return null;
 
-        const { resolvedFav, resolvedA, resolvedB } = _resolveFavFromSides(red, blue);
+        const { resolvedFav, resolvedA, resolvedB, v2 } = _resolveFavFromSides(red, blue);
         if (!resolvedFav || resolvedA == null || resolvedB == null) return null;
 
         const now = Date.now();
@@ -109,6 +118,7 @@
             // ใหม่: แยก side odds แท้จริง (ต่อ/รอง ของแต่ละฝั่งแยกกัน)
             red:  { a: red.a,  b: red.b,  raw: red.raw,  isValid: red.isValid  },
             blue: { a: blue.a, b: blue.b, raw: blue.raw, isValid: blue.isValid },
+            v2: v2,
             // resolved เพื่อ compat กับ UI fav+a+b (ไม่ให้ calculateAll พัง)
             resolvedFav: resolvedFav,
             resolvedA: resolvedA,
@@ -214,6 +224,7 @@
                 // ✨ ใหม่: แยกต่อ/รอง ของแต่ละฝั่งแบบ independent (ใช้เป็น source of truth สำหรับ backtest)
                 red:  { a: s.red.a,  b: s.red.b,  raw: s.red.raw,  isValid: s.red.isValid  },
                 blue: { a: s.blue.a, b: s.blue.b, raw: s.blue.raw, isValid: s.blue.isValid },
+                v2: s.v2,
                 // resolved view สำหรับ compat (อาจมีหรือไม่มีก็ได้ใน future — AI agent ควร derive เองจาก red/blue)
                 resolvedFav: s.resolvedFav,
                 resolvedA: s.resolvedA,
@@ -253,6 +264,7 @@
             lines.push(`                step: ${s.step}, offsetMs: ${s.offsetMs}, src: ${JSON.stringify(s.src)},`);
             lines.push(`                red:  { a: ${s.red.a}, b: ${s.red.b}, raw: ${JSON.stringify(s.red.raw)}, isValid: ${s.red.isValid} },`);
             lines.push(`                blue: { a: ${s.blue.a}, b: ${s.blue.b}, raw: ${JSON.stringify(s.blue.raw)}, isValid: ${s.blue.isValid} },`);
+            lines.push(`                v2: ${JSON.stringify(s.v2 || { red: s.red, blue: s.blue })},`);
             lines.push(`                resolvedFav: ${JSON.stringify(s.resolvedFav)}, resolvedA: ${s.resolvedA}, resolvedB: ${s.resolvedB},`);
             lines.push(`                fav: ${JSON.stringify(s.fav)}, a: ${s.a}, b: ${s.b}`);
             lines.push(`            }${isLast ? '' : ','}`);
@@ -731,6 +743,23 @@
         setBreakevenProfitTarget && setBreakevenProfitTarget(window.breakevenProfitTarget);
     }
 
+    function _getReplayPointSides(point) {
+        if (point.v2 && point.v2.red && point.v2.blue) {
+            return { mode: 'v2', red: point.v2.red, blue: point.v2.blue, derived: point.v2.derived };
+        }
+        if (point.red && point.blue) {
+            const resolved = _resolveFavFromSides(point.red, point.blue);
+            return { mode: 'sides', red: point.red, blue: point.blue, derived: resolved.v2.derived };
+        }
+        if (point.resolvedFav && point.resolvedA != null && point.resolvedB != null) {
+            const fav = point.resolvedFav === 'blue' ? 'blue' : 'red';
+            const favSide = { a: point.resolvedA, b: point.resolvedB, isValid: true, raw: `${point.resolvedA}:${point.resolvedB}` };
+            const dogSide = { a: point.resolvedB, b: point.resolvedA, isValid: true, raw: `${point.resolvedB}:${point.resolvedA}` };
+            return { mode: 'legacy', red: fav === 'red' ? favSide : dogSide, blue: fav === 'blue' ? favSide : dogSide };
+        }
+        return { mode: 'invalid', red: {}, blue: {} };
+    }
+
     function btHistApplyStep(i, isReset) {
         if (!_player.loaded) return;
         const j = _player.scenario.journey;
@@ -738,8 +767,9 @@
         const point = j[i];
 
         // ❌ ถ้า journey step นี้เป็นราคาหาย (invalid) ข้ามไปเลย (ไม่ render, ไม่ calculateAll)
-        const redOk  = point.red  && point.red.isValid;
-        const blueOk = point.blue && point.blue.isValid;
+        const sides = _getReplayPointSides(point);
+        const redOk  = sides.red && sides.red.a > 0 && sides.red.b > 0;
+        const blueOk = sides.blue && sides.blue.a > 0 && sides.blue.b > 0;
         if (!redOk || !blueOk) {
             _player.stepIndex = i;
             btHistRenderScenarioInfo();
@@ -759,9 +789,9 @@
 
         // 🔊 เล่นเสียงเมื่อราคาปรับใหม่ (ถ้า valid) — เสียงเหมือนหน้างาน 100%
         if (redOk && blueOk) {
-            const fav = (point.resolvedFav || point.fav || (point.red.a / point.red.b >= point.blue.a / point.blue.b ? 'red' : 'blue'));
-            const ra = (point.resolvedA != null) ? point.resolvedA : (fav === 'red' ? point.red.a : point.blue.a);
-            const rb = (point.resolvedB != null) ? point.resolvedB : (fav === 'red' ? point.red.b : point.blue.b);
+            const fav = point.resolvedFav || point.fav || (sides.red.a / sides.red.b >= sides.blue.a / sides.blue.b ? 'red' : 'blue');
+            const ra = (point.resolvedA != null && sides.mode === 'legacy') ? point.resolvedA : (fav === 'red' ? sides.red.a : sides.blue.a);
+            const rb = (point.resolvedB != null && sides.mode === 'legacy') ? point.resolvedB : (fav === 'red' ? sides.red.b : sides.blue.b);
             btPlayPriceChangeSound(fav, ra, rb);
         }
     }
@@ -777,17 +807,26 @@
         const hdr = document.getElementById('liveOddsHeader');
         const rEl = document.getElementById('redOddsText');
         const blEl = document.getElementById('blueOddsText');
+        const sides = _getReplayPointSides(point);
+        const hasIndependentSides = sides.mode === 'v2' || sides.mode === 'sides';
 
         // 1) ใส่ Side Raw text (source of truth) ลง #redOddsText และ #blueOddsText โดยตรง
-        if (rEl)  rEl.innerText  = (point.red  && point.red.raw)  ? point.red.raw  : '🔴 แดง: -';
-        if (blEl) blEl.innerText = (point.blue && point.blue.raw) ? point.blue.raw : '🔵 น้ำเงิน: -';
+        if (rEl)  rEl.innerText  = sides.red.raw || `🔴 แดง: ${sides.red.a}:${sides.red.b}`;
+        if (blEl) blEl.innerText = sides.blue.raw || `🔵 น้ำเงิน: ${sides.blue.a}:${sides.blue.b}`;
 
         // 2) Derive fav / oddA / oddB แบบ 3 ชั้น: (a) จาก resolved field (b) จาก red/blue ratio (c) fallback จาก legacy fav+a+b
         let resolvedFav = point.resolvedFav || point.fav;
         let resolvedA = point.resolvedA != null ? point.resolvedA : point.a;
         let resolvedB = point.resolvedB != null ? point.resolvedB : point.b;
-        if (!resolvedFav || resolvedA == null || resolvedB == null) {
-            const derived = _resolveFavFromSides(point.red || {}, point.blue || {});
+        if (hasIndependentSides) {
+            const derived = sides.derived || _resolveFavFromSides(sides.red, sides.blue).v2.derived;
+            resolvedFav = derived.redStatus === 'fav' && derived.blueStatus !== 'fav' ? 'red' :
+                (derived.blueStatus === 'fav' && derived.redStatus !== 'fav' ? 'blue' : (resolvedFav || 'red'));
+            const resolvedSide = resolvedFav === 'red' ? sides.red : sides.blue;
+            resolvedA = resolvedSide.a;
+            resolvedB = resolvedSide.b;
+        } else if (!resolvedFav || resolvedA == null || resolvedB == null) {
+            const derived = _resolveFavFromSides(sides.red, sides.blue);
             resolvedFav = resolvedFav || derived.resolvedFav;
             if (resolvedA == null) resolvedA = derived.resolvedA;
             if (resolvedB == null) resolvedB = derived.resolvedB;
@@ -800,7 +839,7 @@
         // 2.1) ซิงค์ฝั่งรอง: corner = ตรงข้ามฝั่งต่อ, ODDS = ดึงมาจากฝั่งตรงข้ามจริงของ point (dog side's own odds), ไม่สลับ A:B ของฝั่งต่อ
         const dogCornerExpected = resolvedFav === 'red' ? 'blue' : 'red';
         if (dEl) dEl.value = dogCornerExpected;
-        const dogSide = dogCornerExpected === 'red' ? (point.red || {}) : (point.blue || {});
+        const dogSide = dogCornerExpected === 'red' ? sides.red : sides.blue;
         if (dogSide && dogSide.isValid && dogSide.a != null && dogSide.b != null) {
             if (daEl) daEl.value = Math.round(dogSide.a);
             if (dbEl) dbEl.value = Math.round(dogSide.b);
@@ -811,11 +850,11 @@
 
         // 3) Update header + currentPrice compat
         if (hdr) {
-            const redShort  = point.red  && point.red.isValid  ? `🔴${point.red.a}:${point.red.b}`  : '🔴-';
-            const blueShort = point.blue && point.blue.isValid ? `🔵${point.blue.a}:${point.blue.b}` : '🔵-';
+            const redShort  = sides.red.a > 0 && sides.red.b > 0 ? `🔴${sides.red.a}:${sides.red.b}` : '🔴-';
+            const blueShort = sides.blue.a > 0 && sides.blue.b > 0 ? `🔵${sides.blue.a}:${sides.blue.b}` : '🔵-';
             
             const is10_10 = (aRound === bRound);
-            const isBoth10_9 = (point.red && point.blue && point.red.a === 10 && point.red.b === 9 && point.blue.a === 10 && point.blue.b === 9);
+            const isBoth10_9 = (sides.red.a === 10 && sides.red.b === 9 && sides.blue.a === 10 && sides.blue.b === 9);
 
             if (is10_10) {
                 hdr.innerHTML = `<span style="color:#38bdf8;font-weight:bold;">⚖️ Scenario ราคาเสมอ (10:10) (จุดที่ ${_player.stepIndex}) ${redShort} ${blueShort}</span>`;
@@ -825,7 +864,11 @@
                 hdr.innerHTML = `<span style="color:#00ff88;font-weight:bold;">📚 Scenario ${resolvedFav==='red'?'🔴':'🔵'} ต่อ ${aRound}:${bRound} (จุดที่ ${_player.stepIndex}) ${redShort} ${blueShort}</span>`;
             }
         }
-        window.currentPrice = { favCorner: resolvedFav, oddA: aRound, oddB: bRound };
+        window.currentPrice = {
+            favCorner: resolvedFav, oddA: aRound, oddB: bRound,
+            red: { a: sides.red.a, b: sides.red.b, raw: sides.red.raw || null },
+            blue: { a: sides.blue.a, b: sides.blue.b, raw: sides.blue.raw || null }
+        };
     }
 
     // (compat wrapper — ถ้ามีจุดไหนเรียก _applyPriceToUI แบบเดิม)
@@ -1056,27 +1099,31 @@
             const active = i === _player.stepIndex;
             const passed = i < _player.stepIndex;
             const last = i === j.length - 1;
-            const redOk  = s.red  && s.red.isValid;
-            const blueOk = s.blue && s.blue.isValid;
+            const sides = _getReplayPointSides(s);
+            const redOk  = sides.red && sides.red.a > 0 && sides.red.b > 0;
+            const blueOk = sides.blue && sides.blue.a > 0 && sides.blue.b > 0;
             const hasInvalid = !redOk || !blueOk;
             let color, label;
             if (hasInvalid) {
                 color = '#64748b';
                 label = last ? `🏆 -` : `---`;
             } else {
-                // แสดง resolved fav + แสดง รอง+ต่อ ทั้งสองฝั่งไว้ใน title
-                const fav = s.resolvedFav || s.fav;
-                color = fav === 'blue' ? '#3b82f6' : '#ef4444';
-                const a = s.resolvedA != null ? s.resolvedA : s.a;
-                const b = s.resolvedB != null ? s.resolvedB : s.b;
-                const redShort  = `🔴${s.red.a}:${s.red.b}`;
-                const blueShort = `🔵${s.blue.a}:${s.blue.b}`;
+                const state = sides.derived && sides.derived.marketState;
+                const stateColors = {
+                    BOTH_FAV: '#7c3aed', BOTH_EVEN: '#94a3b8', BOTH_DOG: '#9a3412',
+                    RED_FAV_BLUE_DOG: '#059669', RED_DOG_BLUE_FAV: '#2563eb',
+                    RED_FAV_BLUE_EVEN: '#22c55e', RED_EVEN_BLUE_FAV: '#38bdf8',
+                    RED_EVEN_BLUE_DOG: '#f59e0b', RED_DOG_BLUE_EVEN: '#f97316'
+                };
+                color = stateColors[state] || ((s.resolvedFav || s.fav) === 'blue' ? '#3b82f6' : '#ef4444');
+                const a = s.resolvedA != null ? s.resolvedA : sides.red.a;
+                const b = s.resolvedB != null ? s.resolvedB : sides.red.b;
                 label = last ? `🏆 ${a}:${b}` : `${a}:${b}`;
             }
             const cls = `bt-tl-dot ${active ? 'active' : ''} ${passed ? 'passed' : ''} ${last ? 'winner' : ''} ${hasInvalid ? 'bt-tl-dot-invalid' : ''}`;
             const title = hasInvalid
                 ? `จุด ${i}: ❌ ไม่มีราคา (ข้าม ${s.src})`
-                : `จุด ${i}: 🔴${s.red.a}:${s.red.b} | 🔵${s.blue.a}:${s.blue.b} (${s.src})`;
+                : `จุด ${i}: 🔴${sides.red.a}:${sides.red.b} | 🔵${sides.blue.a}:${sides.blue.b} (${s.src})`;
             return `<button class="${cls}" style="--c:${color};${hasInvalid?'opacity:0.35;filter:grayscale(1);':''}" onclick="btHistJump(${i})" title="${title}"><span>${label}</span></button>${i < j.length - 1 ? '<div class="bt-tl-rail"></div>' : ''}`;
         }).join('');
     }

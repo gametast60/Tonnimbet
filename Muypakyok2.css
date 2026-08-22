@@ -86,7 +86,6 @@ body {
     background: rgba(0, 0, 0, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.25s ease;
 }
 
 /* 🔴 Red Favorite Flash Animation (กระพริบขาว สลับ สีแดงเดิม เพื่อบอกว่าแดงเป็นต่อ) */
@@ -137,6 +136,41 @@ body {
         background: rgba(0, 0, 0, 0.35);
         border-color: rgba(59, 130, 246, 0.6);
         box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+        transform: scale(1);
+    }
+}
+
+/* ⚖️ Both-Fav 10:9 (ทั้งสองฝั่งเป็นต่อ 10:9 พร้อมกัน) — กระพริบเหมือนเป็นต่อทั้งคู่ */
+.fighter-avatar.red-avatar.is-both-fav {
+    animation: flashRedFav 1.2s ease-in-out infinite;
+}
+.fighter-avatar.blue-avatar.is-both-fav {
+    animation: flashBlueFav 1.2s ease-in-out infinite;
+}
+
+/* 🟡 Parity Price (A === B / 10:10 ราคาเสมอ) — กระพริบสีทอง-ขาวทั้งสองฝั่ง */
+.fighter-avatar.red-avatar.is-parity-price,
+.fighter-avatar.blue-avatar.is-parity-price {
+    animation: flashParityGold 1.2s ease-in-out infinite;
+}
+
+@keyframes flashParityGold {
+    0% {
+        background: rgba(0, 0, 0, 0.35);
+        border-color: rgba(245, 158, 11, 0.6);
+        box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        background: rgba(254, 243, 199, 0.95);
+        border-color: #ffffff;
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.95), 0 0 25px rgba(245, 158, 11, 0.85);
+        transform: scale(1.12);
+    }
+    100% {
+        background: rgba(0, 0, 0, 0.35);
+        border-color: rgba(245, 158, 11, 0.6);
+        box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
         transform: scale(1);
     }
 }

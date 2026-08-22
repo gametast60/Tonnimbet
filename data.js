@@ -1282,4 +1282,50 @@ window.HISTORICAL_FIGHTS = [
         ]
     },
 
+    
+
 ];
+
+// Non-destructive migration: keep every historical record and legacy field,
+// while exposing the independent V2 shape to the replay engine.
+(function migrateHistoricalFightsToV2(fights) {
+    const deriveSide = (side) => {
+        if (!side || !(side.a > 0) || !(side.b > 0)) return 'even';
+        return side.a > side.b ? 'fav' : (side.a < side.b ? 'dog' : 'even');
+    };
+    const deriveMarketState = (red, blue) => {
+        const key = `${deriveSide(red)}_${deriveSide(blue)}`;
+        return {
+            fav_fav: 'BOTH_FAV', fav_even: 'RED_FAV_BLUE_EVEN', fav_dog: 'RED_FAV_BLUE_DOG',
+            even_fav: 'RED_EVEN_BLUE_FAV', even_even: 'BOTH_EVEN', even_dog: 'RED_EVEN_BLUE_DOG',
+            dog_fav: 'RED_DOG_BLUE_FAV', dog_even: 'RED_DOG_BLUE_EVEN', dog_dog: 'BOTH_DOG'
+        }[key] || 'UNKNOWN';
+    };
+    const legacySide = (point, corner) => {
+        const fav = point.resolvedFav || point.fav || 'red';
+        const a = point.resolvedA != null ? point.resolvedA : point.a;
+        const b = point.resolvedB != null ? point.resolvedB : point.b;
+        if (!(a > 0) || !(b > 0)) return null;
+        const favSide = { a, b, raw: `${a}:${b}`, isValid: true };
+        const dogSide = { a: b, b: a, raw: `${b}:${a}`, isValid: true };
+        return corner === fav ? favSide : dogSide;
+    };
+
+    (fights || []).forEach((fight) => {
+        (fight.journey || []).forEach((point) => {
+            if (!point.red) point.red = legacySide(point, 'red');
+            if (!point.blue) point.blue = legacySide(point, 'blue');
+            if (!point.v2 && point.red && point.blue) {
+                point.v2 = {
+                    red: point.red,
+                    blue: point.blue,
+                    derived: {
+                        redStatus: deriveSide(point.red),
+                        blueStatus: deriveSide(point.blue),
+                        marketState: deriveMarketState(point.red, point.blue)
+                    }
+                };
+            }
+        });
+    });
+})(window.HISTORICAL_FIGHTS);

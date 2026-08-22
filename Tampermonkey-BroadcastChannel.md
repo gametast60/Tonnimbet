@@ -1,3 +1,4 @@
+// ไฟล์นี้ใช้เพื่อ coppy ลง extension tampermonkey เพื่อทำเป็น broadcast
 // ==UserScript==
 // @name         Boxing Odds Scraper & Auto Bet Relay
 // @namespace    http://tampermonkey.net/

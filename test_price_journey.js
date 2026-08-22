@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const assert = require('assert');
 
 const engine = require('./price_journey_engine.js');
@@ -15,6 +16,7 @@ const {
   parseRawWebsitePrice,
   findBoxingPriceStepIndex,
   createPriceSnapshot,
+  createPriceSnapshotV2,
   PriceJourneyTracker,
   evaluateContext,
   runDecisionEngine,
@@ -94,6 +96,11 @@ runTest('Canonical Fractional Price Structure', () => {
   assert.strictEqual(snap.canonical.favoritePrice.numerator, 3);
   assert.strictEqual(snap.canonical.favoritePrice.denominator, 2);
   assert.strictEqual(snap.canonical.priceKey, '3/2');
+  assert.strictEqual(snap.canonicalV2.red.a, 3);
+  assert.strictEqual(snap.canonicalV2.red.b, 2);
+  assert.strictEqual(snap.canonicalV2.blue.a, 2);
+  assert.strictEqual(snap.canonicalV2.blue.b, 3);
+  assert.strictEqual(snap.canonicalV2.derived.marketState, 'RED_FAV_BLUE_DOG');
 });
 
 // 8. Favorite Mapping
@@ -302,6 +309,39 @@ runTest('Same Journey / Different Position Contexts', () => {
   assert.strictEqual(ctxBlue.marketContext, 'UNFAVORABLE_CONTEXT');
 });
 
+// 28b. Independent BOTH_FAV Context
+runTest('BOTH_FAV context evaluates RED and BLUE independently', () => {
+  const tracker = new PriceJourneyTracker();
+  tracker.appendSnapshot(createPriceSnapshotV2('', '', { a: 5, b: 4 }, { a: 2, b: 1 }, 1000));
+  const journey = tracker.appendSnapshot(createPriceSnapshotV2('', '', { a: 2, b: 1 }, { a: 5, b: 4 }, 2000));
+  const ctx = evaluateContext(journey, 'IN_POSITION', 'red', 500, -200);
+
+  assert.strictEqual(journey.currentSnapshot.canonicalV2.derived.marketState, 'BOTH_FAV');
+  assert.strictEqual(journey.stepRedIndex, 5);
+  assert.strictEqual(journey.stepBlueIndex, 1);
+  assert.strictEqual(ctx.v2.redContext, 'FAVORABLE_CONTEXT');
+  assert.strictEqual(ctx.v2.blueContext, 'UNFAVORABLE_CONTEXT');
+});
+
+// 28c. All independent market states
+runTest('All 9 independent RED/BLUE market states', () => {
+  const cases = [
+    [[10, 9], [10, 9], 'BOTH_FAV'],
+    [[10, 10], [10, 10], 'BOTH_EVEN'],
+    [[10, 9], [9, 10], 'RED_FAV_BLUE_DOG'],
+    [[9, 10], [9, 10], 'BOTH_DOG'],
+    [[10, 9], [10, 10], 'RED_FAV_BLUE_EVEN'],
+    [[10, 10], [10, 9], 'RED_EVEN_BLUE_FAV'],
+    [[9, 10], [10, 10], 'RED_DOG_BLUE_EVEN'],
+    [[10, 10], [9, 10], 'RED_EVEN_BLUE_DOG'],
+    [[9, 10], [10, 9], 'RED_DOG_BLUE_FAV']
+  ];
+  cases.forEach(([red, blue, expected]) => {
+    const snap = createPriceSnapshotV2('', '', { a: red[0], b: red[1] }, { a: blue[0], b: blue[1] });
+    assert.strictEqual(snap.canonicalV2.derived.marketState, expected);
+  });
+});
+
 // 29. Legacy PnL & Hedging Regression
 runTest('Legacy PnL & Hedging Calculation Logic', () => {
   // Test PnL logic: fav ticket stake 1000 at 2/1 => win 1000, risk 2000
@@ -311,10 +351,10 @@ runTest('Legacy PnL & Hedging Calculation Logic', () => {
   const riskFav = tFav.stake * (numA / numB);
   assert.strictEqual(riskFav, 2000);
 
-  // Test PnL logic: dog ticket stake 1000 at 5/4 => win 1250, risk 1000
-  const tDog = { corner: 'blue', side: 'dog', a: 5, b: 4, stake: 1000 };
-  const winDog = tDog.stake * (5 / 4);
-  assert.strictEqual(winDog, 1250);
+  // Test PnL logic: dog ticket stake 1000 at 1/2 => win 2000, risk 1000
+  const tDog = { corner: 'blue', side: 'dog', a: 1, b: 2, stake: 1000 };
+  const winDog = tDog.stake * (2 / 1);
+  assert.strictEqual(winDog, 2000);
 });
 
 // 30. End-to-End Flow
@@ -391,6 +431,26 @@ runTest('Entry Signal Scanner for Beginners', () => {
   assert.strictEqual(sigClose.signalType, 'MOMENTUM_FAV');
 });
 
+// 36b. Independent Entry Signals and BLUE dog ticket flow
+runTest('Independent entry signals and BLUE dog PnL flow', () => {
+  const { evaluateEntrySignal } = engine;
+  const signal = evaluateEntrySignal('red', 10, 9, 20000, { a: 10, b: 9 }, { a: 10, b: 9 });
+  assert.strictEqual(signal.redSignal.signal, 'LONG');
+  assert.strictEqual(signal.blueSignal.signal, 'LONG');
+
+  const blueTicket = { corner: 'blue', side: 'dog', a: 9, b: 10, stake: 1000 };
+  const blueWin = blueTicket.stake * (blueTicket.b / blueTicket.a);
+  const blueRisk = blueTicket.stake;
+  assert.strictEqual(blueWin, 1000 * (10 / 9));
+  assert.strictEqual(blueRisk, 1000);
+});
+
+runTest('Underdog 1/2 pays 2x stake', () => {
+  const tDog = { corner: 'red', side: 'dog', a: 1, b: 2, stake: 100 };
+  const ratio = Math.max(tDog.a, tDog.b) / Math.min(tDog.a, tDog.b);
+  assert.strictEqual(tDog.stake * ratio, 200);
+});
+
 // 35. Skew Profit Strategy with Explicit 70% Corner Picker (Forced Red)
 runTest('Skew 70/30 with forced 70% Red when Blue is leading', () => {
   const { calculateStrategyHedge } = engine;
@@ -461,7 +521,10 @@ runTest('Emergency Rescue HUD calculation', () => {
   // Price drops and flips to Blue @ 2:1
   const rescue = calculateEmergencyRescue({
     tickets,
-    currentPrice: { favCorner: 'blue', oddA: 2, oddB: 1 },
+    currentPrice: {
+      favCorner: 'blue', oddA: 2, oddB: 1,
+      redSide: { a: 1, b: 2 }, blueSide: { a: 2, b: 1 }
+    },
     totalCapital: 1000
   });
 
@@ -507,6 +570,42 @@ runTest('Emergency Rescue using Two-Sided Specific Odds', () => {
   // Stake needed = 2000
   assert.strictEqual(rescue.rescueStake, 2000);
   assert.strictEqual(rescue.finalLeadingProfit, 0, 'Leading Blue side becomes Breakeven');
+});
+
+// 43. Historical data integration replay
+runTest('Historical fight journeys replay without crashes', () => {
+  const historicalContext = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'data.js'), 'utf8'), historicalContext);
+  const fights = historicalContext.window.HISTORICAL_FIGHTS;
+  assert.ok(fights.length >= 9, 'Expected the current historical fight library to contain its available records');
+  assert.strictEqual(
+    fights.flatMap((fight) => fight.journey).filter((point) => !point.v2 || !point.v2.red || !point.v2.blue || !point.v2.derived).length,
+    0,
+    'Every historical point should expose the migrated V2 shape'
+  );
+  const permanentFight = fights.find((fight) => fight.fightId === 'fight_20260822_145748');
+  assert.strictEqual(permanentFight.journey[2].v2.derived.marketState, 'BOTH_FAV');
+  assert.strictEqual(permanentFight.journey[3].v2.derived.marketState, 'BOTH_EVEN');
+  assert.strictEqual(permanentFight.journey[4].red.a, 10);
+  assert.strictEqual(permanentFight.journey[4].red.b, 10);
+  assert.strictEqual(permanentFight.journey[4].blue.a, 5);
+  assert.strictEqual(permanentFight.journey[4].blue.b, 4);
+
+  fights.forEach((fight) => {
+    const tracker = new PriceJourneyTracker();
+    fight.journey.forEach((point) => {
+      if (point.red && point.blue && point.red.isValid !== false && point.blue.isValid !== false) {
+        tracker.appendSnapshot(createPriceSnapshotV2('', '', point.red, point.blue));
+      } else if (point.resolvedFav && point.resolvedA != null && point.resolvedB != null) {
+        tracker.appendSnapshot(createPriceSnapshot('', '', point.resolvedFav, point.resolvedA, point.resolvedB));
+      }
+    });
+    if (tracker.currentSnapshot) {
+      const state = tracker.getJourneyState();
+      assert.ok(state.currentSnapshot);
+      assert.ok(state.currentSnapshot.canonicalV2 || state.currentSnapshot.canonical);
+    }
+  });
 });
 
 console.log(`\n==================================================`);

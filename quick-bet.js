@@ -18,70 +18,65 @@ function qbUpdatePnLPreview() {
     }
 
     // ดึงราคาแยกจากข้อความของแต่ละฝั่ง (เหมือนกับที่ qbTriggerAutoBet ใช้)
-    const favCornerEl = document.getElementById('liveFavCorner');
-    const favCorner   = favCornerEl ? favCornerEl.value : 'red';
-
     const redOddsText  = document.getElementById('redOddsText');
     const blueOddsText = document.getElementById('blueOddsText');
 
     const redParsed  = redOddsText  ? qbParseOddsText(redOddsText.innerText)  : null;
     const blueParsed = blueOddsText ? qbParseOddsText(blueOddsText.innerText) : null;
 
+    const currentRed = (typeof currentPrice !== 'undefined' && currentPrice && currentPrice.red && !isNaN(currentPrice.red.a) && !isNaN(currentPrice.red.b) && currentPrice.red.a > 0 && currentPrice.red.b > 0) ? currentPrice.red : null;
+    const currentBlue = (typeof currentPrice !== 'undefined' && currentPrice && currentPrice.blue && !isNaN(currentPrice.blue.a) && !isNaN(currentPrice.blue.b) && currentPrice.blue.a > 0 && currentPrice.blue.b > 0) ? currentPrice.blue : null;
+
     const oddAFallback = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
     const oddBFallback = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+    const favCornerEl = document.getElementById('liveFavCorner');
+    const favCorner   = favCornerEl ? favCornerEl.value : '';
+
     const dogCornerEl = document.getElementById('liveDogCorner');
     const dogCorner = dogCornerEl ? dogCornerEl.value : '';
     const dogAFallbackRaw = parseFloat((document.getElementById('dogOddA') || {}).value) || 0;
     const dogBFallbackRaw = parseFloat((document.getElementById('dogOddB') || {}).value) || 0;
 
-    const favNormalized = (oddAFallback > 0 && oddBFallback > 0)
-        ? { a: Math.max(oddAFallback, oddBFallback), b: Math.min(oddAFallback, oddBFallback) }
-        : null;
-    const dogNormalized = (dogAFallbackRaw > 0 && dogBFallbackRaw > 0)
-        ? { a: Math.max(dogAFallbackRaw, dogBFallbackRaw), b: Math.min(dogAFallbackRaw, dogBFallbackRaw) }
-        : null;
+    let liveRed = redParsed || currentRed;
+    if (!liveRed) {
+        if (favCorner === 'red' && oddAFallback > 0 && oddBFallback > 0) liveRed = { a: oddAFallback, b: oddBFallback };
+        else if (dogCorner === 'red' && dogAFallbackRaw > 0 && dogBFallbackRaw > 0) liveRed = { a: dogAFallbackRaw, b: dogBFallbackRaw };
+    }
 
-    let redA = 0, redB = 0;
-    if (redParsed) { redA = redParsed.a; redB = redParsed.b; }
-    else if (favCorner === 'red' && favNormalized) { redA = favNormalized.a; redB = favNormalized.b; }
-    else if (dogCorner === 'red' && dogNormalized) { redA = dogNormalized.a; redB = dogNormalized.b; }
-    else if (favNormalized) { redA = favNormalized.a; redB = favNormalized.b; }
-    else if (dogNormalized) { redA = dogNormalized.a; redB = dogNormalized.b; }
+    let liveBlue = blueParsed || currentBlue;
+    if (!liveBlue) {
+        if (favCorner === 'blue' && oddAFallback > 0 && oddBFallback > 0) liveBlue = { a: oddAFallback, b: oddBFallback };
+        else if (dogCorner === 'blue' && dogAFallbackRaw > 0 && dogBFallbackRaw > 0) liveBlue = { a: dogAFallbackRaw, b: dogBFallbackRaw };
+    }
 
-    let blueA = 0, blueB = 0;
-    if (blueParsed) { blueA = blueParsed.a; blueB = blueParsed.b; }
-    else if (favCorner === 'blue' && favNormalized) { blueA = favNormalized.a; blueB = favNormalized.b; }
-    else if (dogCorner === 'blue' && dogNormalized) { blueA = dogNormalized.a; blueB = dogNormalized.b; }
-    else if (favNormalized) { blueA = favNormalized.a; blueB = favNormalized.b; }
-    else if (dogNormalized) { blueA = dogNormalized.a; blueB = dogNormalized.b; }
-
-    if (!redA || !redB || !blueA || !blueB) {
+    if (!liveRed || !liveBlue || liveRed.a <= 0 || liveRed.b <= 0 || liveBlue.a <= 0 || liveBlue.b <= 0) {
         redEl.textContent  = 'Win ? / Lose ?';
         blueEl.textContent = 'Win ? / Lose ?';
         return;
     }
 
-    // คำนวณแบบเดียวกับ getTicketPnL ในการ์ดแผล
-    // fav: Win=stake, Lose=stake×(a/b)
-    // dog: Win=stake×(a/b), Lose=stake
-    const redSide  = (favCorner === 'red')  ? 'fav' : 'dog';
-    const blueSide = (favCorner === 'blue') ? 'fav' : 'dog';
+    const redSide  = (typeof deriveSideFromOdds === 'function') ? deriveSideFromOdds(liveRed.a, liveRed.b) : (liveRed.a > liveRed.b ? 'fav' : (liveRed.a < liveRed.b ? 'dog' : 'even'));
+    const blueSide = (typeof deriveSideFromOdds === 'function') ? deriveSideFromOdds(liveBlue.a, liveBlue.b) : (liveBlue.a > liveBlue.b ? 'fav' : (liveBlue.a < liveBlue.b ? 'dog' : 'even'));
 
-    let redWin, redLose, blueWin, blueLose;
-
+    let redWin = 0, redLose = 0;
     if (redSide === 'fav') {
+        const favRatio = (liveRed.b > 0 && liveRed.a > 0) ? (liveRed.a >= liveRed.b ? (liveRed.a / liveRed.b) : (liveRed.b / liveRed.a)) : 1;
         redWin  = stake;
-        redLose = stake * (redA / redB);
+        redLose = stake * favRatio;
     } else {
-        redWin  = stake * (redA / redB);
+        const dogRatio = (liveRed.a > 0 && liveRed.b > 0) ? (liveRed.a >= liveRed.b ? (liveRed.a / liveRed.b) : (liveRed.b / liveRed.a)) : 1;
+        redWin  = stake * dogRatio;
         redLose = stake;
     }
 
+    let blueWin = 0, blueLose = 0;
     if (blueSide === 'fav') {
+        const favRatio = (liveBlue.b > 0 && liveBlue.a > 0) ? (liveBlue.a >= liveBlue.b ? (liveBlue.a / liveBlue.b) : (liveBlue.b / liveBlue.a)) : 1;
         blueWin  = stake;
-        blueLose = stake * (blueA / blueB);
+        blueLose = stake * favRatio;
     } else {
-        blueWin  = stake * (blueA / blueB);
+        const dogRatio = (liveBlue.a > 0 && liveBlue.b > 0) ? (liveBlue.a >= liveBlue.b ? (liveBlue.a / liveBlue.b) : (liveBlue.b / liveBlue.a)) : 1;
+        blueWin  = stake * dogRatio;
         blueLose = stake;
     }
 
@@ -146,21 +141,18 @@ function qbFillMax() {
     bc.postMessage({ action: 'CLICK_MAX_BET' });
 }
 
-// แยกตัวเลขราคาจากข้อความหัวด้านบน เช่น "HDP 1 : 3" -> { a: 3, b: 1 }, "🔴 แดง: HDP 4 : 1" -> { a: 4, b: 1 }
+// แยกตัวเลขราคาจากข้อความหัวด้านบน เช่น "HDP 1 : 3" -> { a: 1, b: 3 }, "🔴 แดง: HDP 4 : 1" -> { a: 4, b: 1 } (Verbatim)
 function qbParseOddsText(text) {
     if (!text) return null;
     const matches = text.match(/\d+(\.\d+)?/g);
     if (!matches || matches.length < 2) return null;
     
-    const num1 = parseFloat(matches[0]);
-    const num2 = parseFloat(matches[1]);
+    const a = parseFloat(matches[0]);
+    const b = parseFloat(matches[1]);
     
-    if (isNaN(num1) || isNaN(num2)) return null;
+    if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) return null;
     
-    // อัตราส่วนมวยไทย a : b จะเป็น ตัวมาก : ตัวน้อย เสมอ (เช่น 3:1, 4:1, 11:8)
-    const a = Math.max(num1, num2);
-    const b = Math.min(num1, num2);
-    return { a, b: b === 0 ? 1 : b };
+    return { a, b };
 }
 
 function qbTriggerAutoBet(corner, amountOverride) {
@@ -191,23 +183,7 @@ function qbTriggerAutoBet(corner, amountOverride) {
         amount: amount
     });
 
-    // 2. ตรวจสอบมวยต่อ/มวยรอง จากหัวตรงกลาง หรือ liveFavCorner
-    const favCornerEl = document.getElementById('liveFavCorner');
-    const headerEl = document.getElementById('liveOddsHeader');
-    let favCorner = 'red';
-    if (favCornerEl && favCornerEl.value) {
-        favCorner = favCornerEl.value;
-    } else if (headerEl && headerEl.innerText.includes('น้ำเงินต่อ')) {
-        favCorner = 'blue';
-    }
-
-    // กำหนดสถานะ: ถ้ากดฝั่งเดียวกับฝั่งต่อ -> "ต่อ" (fav), ถ้าตรงข้าม -> "รอง" (dog)
-    const side = (corner === favCorner) ? 'fav' : 'dog';
-
-    // 3. ดึงราคาเฉพาะของฝั่งที่กด (แดงเอาหัวซ้าย, น้ำเงินเอาหัวขวา)
-    let oddA = 2;
-    let oddB = 1;
-
+    // 2. ดึงราคาเฉพาะของฝั่งที่กด (แดงเอาหัวซ้าย, น้ำเงินเอาหัวขวา)
     let targetText = '';
     if (corner === 'red') {
         const redOddsEl = document.getElementById('redOddsText');
@@ -217,13 +193,17 @@ function qbTriggerAutoBet(corner, amountOverride) {
         targetText = blueOddsEl ? blueOddsEl.innerText : '';
     }
 
-    const parsedOdds = qbParseOddsText(targetText);
-    if (parsedOdds) {
-        oddA = parsedOdds.a;
-        oddB = parsedOdds.b;
-    } else {
-        // Fallback 1: ดึงจากช่องฝั่งต่อ (fav) หรือ ฝั่งรอง (dog) ขึ้นอยู่กับว่ากดแทงฝั่งไหน
-        let useA = 2, useB = 1;
+    let targetOdds = qbParseOddsText(targetText);
+
+    if (!targetOdds && typeof currentPrice !== 'undefined' && currentPrice) {
+        const cOdds = corner === 'red' ? currentPrice.red : currentPrice.blue;
+        if (cOdds && !isNaN(cOdds.a) && !isNaN(cOdds.b) && cOdds.a > 0 && cOdds.b > 0) {
+            targetOdds = { a: cOdds.a, b: cOdds.b };
+        }
+    }
+
+    if (!targetOdds) {
+        // Fallback จากช่อง liveFavCorner / liveDogCorner
         const favCornerEl = document.getElementById('liveFavCorner');
         const favCornerVal = favCornerEl ? favCornerEl.value : '';
         const favAEl = document.getElementById('liveOddA');
@@ -238,24 +218,24 @@ function qbTriggerAutoBet(corner, amountOverride) {
         const daRaw = (dogAEl && dogAEl.value !== '') ? (parseFloat(dogAEl.value) || 0) : 0;
         const dbRaw = (dogBEl && dogBEl.value !== '') ? (parseFloat(dogBEl.value) || 0) : 0;
 
-        const fa = faRaw > 0 && fbRaw > 0 ? Math.max(faRaw, fbRaw) : 0;
-        const fb = faRaw > 0 && fbRaw > 0 ? Math.min(faRaw, fbRaw) : 0;
-        const da = daRaw > 0 && dbRaw > 0 ? Math.max(daRaw, dbRaw) : 0;
-        const db = daRaw > 0 && dbRaw > 0 ? Math.min(daRaw, dbRaw) : 0;
-
-        if (corner === favCornerVal && fa > 0 && fb > 0) {
-            useA = fa; useB = fb;
-        } else if (corner === dogCornerVal && da > 0 && db > 0) {
-            useA = da; useB = db;
-        } else if (fa > 0 && fb > 0) {
-            useA = fa; useB = fb;
-        } else if (da > 0 && db > 0) {
-            useA = da; useB = db;
+        if (corner === favCornerVal && faRaw > 0 && fbRaw > 0) {
+            targetOdds = { a: faRaw, b: fbRaw };
+        } else if (corner === dogCornerVal && daRaw > 0 && dbRaw > 0) {
+            targetOdds = { a: daRaw, b: dbRaw };
+        } else if (faRaw > 0 && fbRaw > 0) {
+            targetOdds = { a: faRaw, b: fbRaw };
+        } else if (daRaw > 0 && dbRaw > 0) {
+            targetOdds = { a: daRaw, b: dbRaw };
         } else {
-            useA = 2; useB = 1;
+            targetOdds = { a: 2, b: 1 };
         }
-        oddA = useA; oddB = useB;
     }
+
+    const oddA = targetOdds.a;
+    const oddB = targetOdds.b;
+    const side = (typeof deriveSideFromOdds === 'function') 
+        ? deriveSideFromOdds(oddA, oddB) 
+        : (oddA > oddB ? 'fav' : (oddA < oddB ? 'dog' : 'even'));
 
     // 4. เคลียร์ช่อง input หลังกดแทงเรียบร้อย
     if (input) {
@@ -276,7 +256,7 @@ function qbTriggerAutoBet(corner, amountOverride) {
     const statusEl = document.getElementById('qbStatus');
     if (statusEl) {
         const cornerText = corner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
-        const sideText = side === 'fav' ? 'ต่อ' : 'รอง';
+        const sideText = side === 'fav' ? 'ต่อ' : (side === 'dog' ? 'รอง' : 'เสมอ');
         statusEl.innerHTML = `<span style="color: #00ff88; font-size: 0.8rem; font-weight: 500;">⚡ ส่งคำสั่งแทง [${cornerText} ${sideText} ${oddA}:${oddB}] ${amount.toLocaleString()} B แล้ว</span>`;
         
         clearTimeout(window._qbStatusTimeout);

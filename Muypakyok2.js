@@ -25,15 +25,79 @@ const standardBoxingOdds = [
 ];
 
 
-let previousPrice = null;
-let currentPrice = { favCorner: null, oddA: NaN, oddB: NaN };
+let previousPrice = {
+    // LEGACY (keep for backward compat — derived only, NOT source of truth)
+    favCorner: null, oddA: NaN, oddB: NaN,
+    // NEW RED/BLUE INDEPENDENT (SOURCE OF TRUTH POST-STEP 4)
+    red:  { a: NaN, b: NaN, raw: null },
+    blue: { a: NaN, b: NaN, raw: null }
+};
+
+let currentPrice = { 
+    // LEGACY (keep for backward compat — derived only, NOT source of truth)
+    favCorner: null, oddA: NaN, oddB: NaN,
+    // NEW RED/BLUE INDEPENDENT (SOURCE OF TRUTH POST-STEP 4)
+    red:  { a: NaN, b: NaN, raw: null },
+    blue: { a: NaN, b: NaN, raw: null }
+};
+
+// SHARED UTILITY FUNCTIONS (STEP 1 — Independent Odds Model Foundation)
+function deriveSideFromOdds(a, b) {
+    const numA = parseFloat(a) || 0;
+    const numB = parseFloat(b) || 0;
+    if (numA > numB) return 'fav';    // ต่อ
+    if (numA < numB) return 'dog';    // รอง
+    return 'even';                    // เสมอ
+}
+
+function deriveCornerStatuses(redObj, blueObj) {
+    // INDEPENDENT — no cross reference between red and blue
+    const red = redObj || {};
+    const blue = blueObj || {};
+    const redStatus = deriveSideFromOdds(red.a, red.b);
+    const blueStatus = deriveSideFromOdds(blue.a, blue.b);
+
+    // MARKET STATE (meta, not stored — derived)
+    const stateKey = `${redStatus}_${blueStatus}`;
+    const marketState = {
+        'fav_fav':   'BOTH_FAV',
+        'fav_even':  'RED_FAV_BLUE_EVEN',
+        'fav_dog':   'RED_FAV_BLUE_DOG',     // Classic case
+        'even_fav':  'RED_EVEN_BLUE_FAV',
+        'even_even': 'BOTH_EVEN',
+        'even_dog':  'RED_EVEN_BLUE_DOG',
+        'dog_fav':   'RED_DOG_BLUE_FAV',     // Classic case (inverted)
+        'dog_even':  'RED_DOG_BLUE_EVEN',
+        'dog_dog':   'BOTH_DOG'
+    }[stateKey] || 'UNKNOWN';
+
+    return { redStatus, blueStatus, marketState };
+}
+
+function isOddsValid(o) {
+    if (!o) return false;
+    const a = parseFloat(o.a);
+    const b = parseFloat(o.b);
+    return !isNaN(a) && !isNaN(b) && a > 0 && b > 0;
+}
+
+function cloneOdds(o) {
+    if (!o) return { a: NaN, b: NaN, raw: null };
+    return {
+        a: typeof o.a === 'number' ? o.a : parseFloat(o.a),
+        b: typeof o.b === 'number' ? o.b : parseFloat(o.b),
+        raw: o.raw !== undefined ? o.raw : null
+    };
+}
 
 const priceTracker = (typeof PriceJourneyEngine !== 'undefined') 
     ? new PriceJourneyEngine.PriceJourneyTracker() 
     : null;
+window.priceTracker = priceTracker;
 
 let _syncingFavDog = false;
 
+// LEGACY UI COMPAT helper; V2 business logic derives each corner independently.
 function _oppositeCorner(c) {
     return (c === 'red') ? 'blue' : ((c === 'blue') ? 'red' : '');
 }
@@ -74,12 +138,11 @@ function syncFavAndDogInputs(source) {
         const favCornerVal = (fav.corner && fav.corner.value) ? fav.corner.value : '';
         const dogCornerVal = (dog.corner && dog.corner.value) ? dog.corner.value : '';
 
-        // กฎ: ฝั่งต่อ กับ ฝั่งรอง = ตรงข้ามเสมอ (ห้ามเป็นฝั่งเดียวกัน)
-        // แต่ราคา (A/B) = อิสระกัน — ไม่สลับ A/B ให้กันเอง
-        if ((source === 'fav' || !source) && (favCornerVal === 'red' || favCornerVal === 'blue')) {
-            if (dog.corner) dog.corner.value = _oppositeCorner(favCornerVal);
-        } else if ((source === 'dog' || !source) && (dogCornerVal === 'red' || dogCornerVal === 'blue')) {
-            if (fav.corner) fav.corner.value = _oppositeCorner(dogCornerVal);
+        // ถ้า user เปลี่ยนจาก dropdown หน้าจอ และอีกฝั่งว่างอยู่
+        if (source === 'fav' && (favCornerVal === 'red' || favCornerVal === 'blue')) {
+            // ไม่บังคับว่า liveDogCorner = opposite เพื่อรองรับ BOTH_FAV หรืออิสระ
+        } else if (source === 'dog' && (dogCornerVal === 'red' || dogCornerVal === 'blue')) {
+            // ไม่บังคับว่า liveFavCorner = opposite
         }
     } finally {
         _syncingFavDog = false;
@@ -95,59 +158,93 @@ window.onFavOrDogChange = onFavOrDogChange;
 window.onload = function() {
     syncFavAndDogInputs();
 
+    const redEl = document.getElementById('redOddsText');
+    const blueEl = document.getElementById('blueOddsText');
+    const redParsed = redEl ? parseOddsPreserveOrder(redEl.innerText) : null;
+    const blueParsed = blueEl ? parseOddsPreserveOrder(blueEl.innerText) : null;
+
     const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
     const rawA = (document.getElementById('liveOddA') || {}).value;
     const rawB = (document.getElementById('liveOddB') || {}).value;
-    let oddA = (rawA !== undefined && rawA !== '') ? (parseFloat(rawA) || 0) : 0;
-    let oddB = (rawB !== undefined && rawB !== '') ? (parseFloat(rawB) || 0) : 0;
+    const oddA = (rawA !== undefined && rawA !== '') ? (parseFloat(rawA) || 0) : 0;
+    const oddB = (rawB !== undefined && rawB !== '') ? (parseFloat(rawB) || 0) : 0;
 
-    if ((liveFavCorner === 'red' || liveFavCorner === 'blue') && oddA > 0 && oddB > 0) {
-        if (oddA < oddB) { const tmp = oddA; oddA = oddB; oddB = tmp; }
-        currentPrice = { favCorner: liveFavCorner, oddA, oddB };
-    } else {
-        currentPrice = { favCorner: null, oddA: NaN, oddB: NaN };
+    const liveDogCorner = (document.getElementById('liveDogCorner') || {}).value || '';
+    const rawDogA = (document.getElementById('dogOddA') || {}).value;
+    const rawDogB = (document.getElementById('dogOddB') || {}).value;
+    const dogOddA = (rawDogA !== undefined && rawDogA !== '') ? (parseFloat(rawDogA) || 0) : 0;
+    const dogOddB = (rawDogB !== undefined && rawDogB !== '') ? (parseFloat(rawDogB) || 0) : 0;
+
+    let redOdds = redParsed ? { a: redParsed.a, b: redParsed.b, raw: redEl.innerText } : null;
+    let blueOdds = blueParsed ? { a: blueParsed.a, b: blueParsed.b, raw: blueEl.innerText } : null;
+
+    if (!redOdds) {
+        if (liveFavCorner === 'red' && oddA > 0 && oddB > 0) redOdds = { a: oddA, b: oddB, raw: `${oddA}:${oddB}` };
+        else if (liveDogCorner === 'red' && dogOddA > 0 && dogOddB > 0) redOdds = { a: dogOddA, b: dogOddB, raw: `${dogOddA}:${dogOddB}` };
     }
+    if (!blueOdds) {
+        if (liveFavCorner === 'blue' && oddA > 0 && oddB > 0) blueOdds = { a: oddA, b: oddB, raw: `${oddA}:${oddB}` };
+        else if (liveDogCorner === 'blue' && dogOddA > 0 && dogOddB > 0) blueOdds = { a: dogOddA, b: dogOddB, raw: `${dogOddA}:${dogOddB}` };
+    }
+
+    currentPrice.red = redOdds ? cloneOdds(redOdds) : { a: NaN, b: NaN, raw: null };
+    currentPrice.blue = blueOdds ? cloneOdds(blueOdds) : { a: NaN, b: NaN, raw: null };
+
+    // Legacy favCorner derivation
+    const { redStatus, blueStatus } = deriveCornerStatuses(currentPrice.red, currentPrice.blue);
+    if (redStatus === 'fav' && blueStatus !== 'fav') {
+        currentPrice.favCorner = 'red';
+        currentPrice.oddA = currentPrice.red.a;
+        currentPrice.oddB = currentPrice.red.b;
+    } else if (blueStatus === 'fav' && redStatus !== 'fav') {
+        currentPrice.favCorner = 'blue';
+        currentPrice.oddA = currentPrice.blue.a;
+        currentPrice.oddB = currentPrice.blue.b;
+    } else {
+        currentPrice.favCorner = null;
+        currentPrice.oddA = NaN;
+        currentPrice.oddB = NaN;
+    }
+
     previousPrice = null;
 
     if (priceTracker) {
         priceTracker.reset();
-        if (currentPrice.favCorner && currentPrice.oddA > 0 && currentPrice.oddB > 0) {
-            const initialSnap = PriceJourneyEngine.createPriceSnapshot('', '', currentPrice.favCorner, currentPrice.oddA, currentPrice.oddB);
+        if (isOddsValid(currentPrice.red) || isOddsValid(currentPrice.blue)) {
+            const initialSnap = PriceJourneyEngine.createPriceSnapshotV2('', '', currentPrice.red, currentPrice.blue);
             priceTracker.appendSnapshot(initialSnap);
         }
     }
 };
 
 function getTicketPnL(t) {
-    let a = parseFloat(t.a) || 1;
-    let b = parseFloat(t.b) || 1;
-    let stake = parseFloat(t.stake) || 0;
-
-    if (a > 0 && b > 0 && a < b) {
-        const tmp = a; a = b; b = tmp;
-    }
+    const a = parseFloat(t.a) || 1;
+    const b = parseFloat(t.b) || 1;
+    const stake = parseFloat(t.stake) || 0;
+    const actualSide = t.side || deriveSideFromOdds(a, b);
 
     let winAmt = 0;
     let riskAmt = 0;
 
-    if (t.side === 'fav') { 
-        riskAmt = stake * (a / b);
+    if (actualSide === 'fav') { 
+        const favRatio = (b > 0 && a > 0) ? (a >= b ? (a / b) : (b / a)) : 1;
+        riskAmt = stake * favRatio;
         winAmt = stake;
     } else { 
         riskAmt = stake;
-        winAmt = stake * (a / b);
+        const dogRatio = (a > 0 && b > 0) ? (a >= b ? (a / b) : (b / a)) : 1;
+        winAmt = stake * dogRatio;
     }
     return { winAmt, riskAmt };
 }
 
-function addTicket(corner = 'red', side = 'fav', a = 2, b = 1, stake = 100) {
-    let aa = parseFloat(a) || 2;
-    let bb = parseFloat(b) || 1;
-    if (aa > 0 && bb > 0 && aa < bb) {
-        const tmp = aa; aa = bb; bb = tmp;
-    }
+function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
+    const aa = parseFloat(a) || 2;
+    const bb = parseFloat(b) || 1;
+    const actualSide = side || deriveSideFromOdds(aa, bb);
     const id = Date.now() + Math.random();
-    tickets.push({ id, corner, side, a: aa, b: bb, stake });
+    const createdAt = Date.now();
+    tickets.push({ id, corner, side: actualSide, a: aa, b: bb, stake, createdAt });
     window._lastCreatedTicketId = id;
     renderTickets();
     calculateAll();
@@ -185,8 +282,8 @@ function updateTicketSummaryText(t) {
     const pnl = getTicketPnL(t);
     const winEl = document.getElementById('win-val-' + t.id);
     const riskEl = document.getElementById('risk-val-' + t.id);
-    if (winEl) winEl.innerText = '+' + Math.round(pnl.winAmt) + ' B';
-    if (riskEl) riskEl.innerText = '-' + Math.round(pnl.riskAmt) + ' B';
+    if (winEl) winEl.innerText = '+' + Math.floor(pnl.winAmt) + ' B';
+    if (riskEl) riskEl.innerText = '-' + Math.ceil(pnl.riskAmt) + ' B';
 }
 
 function renderTickets() {
@@ -205,7 +302,7 @@ function renderTickets() {
         item.innerHTML = 
             '<button class="btn-delete" onclick="removeTicket(' + t.id + ')">✕ ลบ</button>' +
             '<div class="ticket-header">' +
-                '<div style="display:flex; align-items:center;">' +
+                '<div style="display:flex; align-items:center; gap: 8px;">' +
                     '<label style="font-weight:600; color:#fff;">แผล #' + (idx+1) + '</label>' +
                     '<div class="corner-toggle">' +
                         '<button id="btn-corner-red-' + t.id + '" class="btn-corner red ' + (t.corner === 'red' ? 'active' : '') + '" onclick="updateTicket(' + t.id + ', \'corner\', \'red\')">🔴 แดง</button>' +
@@ -235,11 +332,12 @@ function renderTickets() {
                 '</div>' +
             '</div>' +
             '<div class="ticket-summary">' +
-                '<span>🎯 กำไร: <strong class="text-green" id="win-val-' + t.id + '">+' + Math.round(pnl.winAmt) + ' B</strong></span>' +
-                '<span>❌ ถ้าเสีย: <strong class="text-red" id="risk-val-' + t.id + '">-' + Math.round(pnl.riskAmt) + ' B</strong></span>' +
+                '<span>🎯 กำไร: <strong class="text-green" id="win-val-' + t.id + '">+' + Math.floor(pnl.winAmt) + ' B</strong></span>' +
+                '<span>❌ ถ้าเสีย: <strong class="text-red" id="risk-val-' + t.id + '">-' + Math.ceil(pnl.riskAmt) + ' B</strong></span>' +
             '</div>';
         container.appendChild(item);
     });
+
 }
 
 function setStrategy(strat) {
@@ -419,33 +517,85 @@ function executeOneClickHedge() {
 
 function handlePriceSnapshotUpdate() {
     syncFavAndDogInputs();
+
+    const redEl = document.getElementById('redOddsText');
+    const blueEl = document.getElementById('blueOddsText');
+    const redParsed = redEl ? parseOddsPreserveOrder(redEl.innerText) : null;
+    const blueParsed = blueEl ? parseOddsPreserveOrder(blueEl.innerText) : null;
+
     const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
     const rawA = (document.getElementById('liveOddA') || {}).value;
     const rawB = (document.getElementById('liveOddB') || {}).value;
-    let oddA = (rawA !== undefined && rawA !== '') ? (parseFloat(rawA) || 0) : 0;
-    let oddB = (rawB !== undefined && rawB !== '') ? (parseFloat(rawB) || 0) : 0;
+    const oddA = (rawA !== undefined && rawA !== '') ? (parseFloat(rawA) || 0) : 0;
+    const oddB = (rawB !== undefined && rawB !== '') ? (parseFloat(rawB) || 0) : 0;
 
-    const hasValidPrice = (liveFavCorner === 'red' || liveFavCorner === 'blue') && oddA > 0 && oddB > 0;
-    if (hasValidPrice && oddA < oddB) { const tmp = oddA; oddA = oddB; oddB = tmp; }
+    const liveDogCorner = (document.getElementById('liveDogCorner') || {}).value || '';
+    const rawDogA = (document.getElementById('dogOddA') || {}).value;
+    const rawDogB = (document.getElementById('dogOddB') || {}).value;
+    const dogOddA = (rawDogA !== undefined && rawDogA !== '') ? (parseFloat(rawDogA) || 0) : 0;
+    const dogOddB = (rawDogB !== undefined && rawDogB !== '') ? (parseFloat(rawDogB) || 0) : 0;
 
-    const favCornerNormalized = hasValidPrice ? liveFavCorner : null;
-    const oddANormalized = hasValidPrice ? oddA : NaN;
-    const oddBNormalized = hasValidPrice ? oddB : NaN;
+    let newRed = (redParsed && isOddsValid(redParsed)) ? { a: redParsed.a, b: redParsed.b, raw: redEl.innerText } : (isOddsValid(currentPrice.red) ? cloneOdds(currentPrice.red) : null);
+    let newBlue = (blueParsed && isOddsValid(blueParsed)) ? { a: blueParsed.a, b: blueParsed.b, raw: blueEl.innerText } : (isOddsValid(currentPrice.blue) ? cloneOdds(currentPrice.blue) : null);
+
+    if (!newRed) {
+        if (liveFavCorner === 'red' && oddA > 0 && oddB > 0) newRed = { a: oddA, b: oddB, raw: `${oddA}:${oddB}` };
+        else if (liveDogCorner === 'red' && dogOddA > 0 && dogOddB > 0) newRed = { a: dogOddA, b: dogOddB, raw: `${dogOddA}:${dogOddB}` };
+    }
+    if (!newBlue) {
+        if (liveFavCorner === 'blue' && oddA > 0 && oddB > 0) newBlue = { a: oddA, b: oddB, raw: `${oddA}:${oddB}` };
+        else if (liveDogCorner === 'blue' && dogOddA > 0 && dogOddB > 0) newBlue = { a: dogOddA, b: dogOddB, raw: `${dogOddA}:${dogOddB}` };
+    }
+
+    const nextRed = newRed ? cloneOdds(newRed) : { a: NaN, b: NaN, raw: null };
+    const nextBlue = newBlue ? cloneOdds(newBlue) : { a: NaN, b: NaN, raw: null };
+
+    const { redStatus, blueStatus } = deriveCornerStatuses(nextRed, nextBlue);
+    let legacyFav = null;
+    let legacyA = NaN;
+    let legacyB = NaN;
+
+    if (redStatus === 'fav' && blueStatus !== 'fav') {
+        legacyFav = 'red';
+        legacyA = nextRed.a;
+        legacyB = nextRed.b;
+    } else if (blueStatus === 'fav' && redStatus !== 'fav') {
+        legacyFav = 'blue';
+        legacyA = nextBlue.a;
+        legacyB = nextBlue.b;
+    }
 
     const isPriceChanged = (
-        currentPrice.favCorner !== favCornerNormalized ||
-        currentPrice.oddA !== oddANormalized ||
-        currentPrice.oddB !== oddBNormalized
+        currentPrice.red?.a !== nextRed.a ||
+        currentPrice.red?.b !== nextRed.b ||
+        currentPrice.blue?.a !== nextBlue.a ||
+        currentPrice.blue?.b !== nextBlue.b ||
+        currentPrice.favCorner !== legacyFav
     );
 
     if (isPriceChanged) {
-        previousPrice = { ...currentPrice };
-        currentPrice = { favCorner: favCornerNormalized, oddA: oddANormalized, oddB: oddBNormalized };
+        previousPrice = { 
+            favCorner: currentPrice.favCorner,
+            oddA: currentPrice.oddA,
+            oddB: currentPrice.oddB,
+            red: cloneOdds(currentPrice.red),
+            blue: cloneOdds(currentPrice.blue)
+        };
+        currentPrice = {
+            favCorner: legacyFav,
+            oddA: legacyA,
+            oddB: legacyB,
+            red: nextRed,
+            blue: nextBlue
+        };
 
-        if (priceTracker && hasValidPrice) {
-            const snap = PriceJourneyEngine.createPriceSnapshot('', '', favCornerNormalized, oddANormalized, oddBNormalized);
+        if (priceTracker && (isOddsValid(nextRed) || isOddsValid(nextBlue))) {
+            const snap = PriceJourneyEngine.createPriceSnapshotV2('', '', nextRed, nextBlue);
             priceTracker.appendSnapshot(snap);
         }
+    } else if (priceTracker && priceTracker.priceHistory.length === 0 && (isOddsValid(nextRed) || isOddsValid(nextBlue))) {
+        const snap = PriceJourneyEngine.createPriceSnapshotV2('', '', nextRed, nextBlue);
+        priceTracker.appendSnapshot(snap);
     }
 }
 
@@ -460,13 +610,13 @@ function evaluateMuayExpertDecision(netRed, netBlue, isReady) {
 
     if (gpsRedPnL) {
         gpsRedPnL.innerHTML = netRed >= 0 
-            ? '<span class="text-green">+' + Math.round(netRed).toLocaleString() + ' บาท</span>'
-            : '<span class="text-red">' + Math.round(netRed).toLocaleString() + ' บาท</span>';
+            ? '<span class="text-green">+' + Math.floor(netRed).toLocaleString() + ' บาท</span>'
+            : '<span class="text-red">' + Math.floor(netRed).toLocaleString() + ' บาท</span>';
     }
     if (gpsBluePnL) {
         gpsBluePnL.innerHTML = netBlue >= 0 
-            ? '<span class="text-green">+' + Math.round(netBlue).toLocaleString() + ' บาท</span>'
-            : '<span class="text-red">' + Math.round(netBlue).toLocaleString() + ' บาท</span>';
+            ? '<span class="text-green">+' + Math.floor(netBlue).toLocaleString() + ' บาท</span>'
+            : '<span class="text-red">' + Math.floor(netBlue).toLocaleString() + ' บาท</span>';
     }
 
     if (typeof PriceJourneyEngine === 'undefined' || !priceTracker) {
@@ -538,7 +688,7 @@ function calculateAll() {
     const remCap = totalCapital - usedCapital;
     const remCapEl = document.getElementById('remCapital');
     if (remCapEl) {
-        remCapEl.innerText = Math.round(remCap).toLocaleString() + ' B';
+        remCapEl.innerText = Math.floor(remCap).toLocaleString() + ' B';
         remCapEl.className = 'stat-val ' + (remCap < 0 ? 'text-red' : 'text-green');
     }
 
@@ -547,14 +697,14 @@ function calculateAll() {
 
     if (netRedEl) {
         netRedEl.innerHTML = netRed >= 0 
-            ? '<span class="text-green">กำไรสุทธิ +' + Math.round(netRed).toLocaleString() + ' B</span>' 
-            : '<span class="text-red">เสีย (ขาดทุน) ' + Math.round(netRed).toLocaleString() + ' B</span>';
+            ? '<span class="text-green">กำไรสุทธิ +' + Math.floor(netRed).toLocaleString() + ' B</span>' 
+            : '<span class="text-red">เสีย (ขาดทุน) ' + Math.floor(netRed).toLocaleString() + ' B</span>';
     }
 
     if (netBlueEl) {
         netBlueEl.innerHTML = netBlue >= 0 
-            ? '<span class="text-green">กำไรสุทธิ +' + Math.round(netBlue).toLocaleString() + ' B</span>' 
-            : '<span class="text-red">เสีย (ขาดทุน) ' + Math.round(netBlue).toLocaleString() + ' B</span>';
+            ? '<span class="text-green">กำไรสุทธิ +' + Math.floor(netBlue).toLocaleString() + ' B</span>' 
+            : '<span class="text-red">เสีย (ขาดทุน) ' + Math.floor(netBlue).toLocaleString() + ' B</span>';
     }
 
     const mainSideEl = document.getElementById('mainSide');
@@ -585,43 +735,46 @@ function calculateAll() {
 }
 
 // 🥊 อัปเดตสถานะกระพริบขาว-สีเดิมของ Avatar นวม (แฟลชบอกฝั่งที่เป็นต่อ)
+// 🔁 เก็บสถานะล่าสุดไว้ ไม่ให้ animation restart บ่อยเกินไปเมื่อรับราคา Live ซ้ำๆ
+let __lastAvatarStateKey = null;
 function updateFighterAvatarFavStatus(favCorner, isClosed) {
     const redAvatar = document.getElementById('redFighterAvatar');
     const blueAvatar = document.getElementById('blueFighterAvatar');
     if (!redAvatar || !blueAvatar) return;
 
-    if (isClosed || !favCorner || favCorner === 'draw' || favCorner === 'parity') {
-        redAvatar.classList.remove('is-fav');
-        blueAvatar.classList.remove('is-fav');
-        return;
-    }
-
     const liveA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
     const liveB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
-
-    // ตรวจสอบกรณีราคาเสมอ 10/10 (1:1) หรือ ต่อ 10/9 ทั้งสองฝั่ง
     const redOddsText  = (document.getElementById('redOddsText')  || {}).innerText || '';
     const blueOddsText = (document.getElementById('blueOddsText') || {}).innerText || '';
     const isBoth10_9 = (redOddsText.includes('10') && redOddsText.includes('9') && blueOddsText.includes('10') && blueOddsText.includes('9'));
     const isParity10_10 = (liveA > 0 && liveB > 0 && liveA === liveB);
 
-    if (isParity10_10 || isBoth10_9) {
-        // ⚖️ ราคาเสมอ / เบียดสูสี ➔ อยู่นิ่งทั้งคู่ ไม่กระพริบ
-        redAvatar.classList.remove('is-fav');
-        blueAvatar.classList.remove('is-fav');
-        return;
+    let redClass = '';
+    let blueClass = '';
+
+    if (!isClosed && favCorner && favCorner !== 'draw' && favCorner !== 'parity') {
+        if (isParity10_10) {
+            redClass = 'is-parity-price';
+            blueClass = 'is-parity-price';
+        } else if (isBoth10_9) {
+            redClass = 'is-both-fav';
+            blueClass = 'is-both-fav';
+        } else if (favCorner === 'red') {
+            redClass = 'is-fav';
+        } else if (favCorner === 'blue') {
+            blueClass = 'is-fav';
+        }
     }
 
-    if (favCorner === 'red') {
-        redAvatar.classList.add('is-fav');
-        blueAvatar.classList.remove('is-fav');
-    } else if (favCorner === 'blue') {
-        blueAvatar.classList.add('is-fav');
-        redAvatar.classList.remove('is-fav');
-    } else {
-        redAvatar.classList.remove('is-fav');
-        blueAvatar.classList.remove('is-fav');
-    }
+    const stateKey = String(isClosed ? 'CLOSED' : '') + '|' + (favCorner || '') + '|' + redClass + '|' + blueClass;
+    if (stateKey === __lastAvatarStateKey) return;
+    __lastAvatarStateKey = stateKey;
+
+    const ALL = ['is-fav', 'is-both-fav', 'is-parity-price'];
+    ALL.forEach(c => redAvatar.classList.remove(c));
+    ALL.forEach(c => blueAvatar.classList.remove(c));
+    if (redClass) redAvatar.classList.add(redClass);
+    if (blueClass) blueAvatar.classList.add(blueClass);
 }
 window.updateFighterAvatarFavStatus = updateFighterAvatarFavStatus;
 
@@ -812,14 +965,12 @@ function qbParseOddsText(text) {
     const matches = text.match(/\d+(\.\d+)?/g);
     if (!matches || matches.length < 2) return null;
     
-    const num1 = parseFloat(matches[0]);
-    const num2 = parseFloat(matches[1]);
+    const a = parseFloat(matches[0]);
+    const b = parseFloat(matches[1]);
     
-    if (isNaN(num1) || isNaN(num2)) return null;
+    if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) return null;
     
-    const a = Math.max(num1, num2);
-    const b = Math.min(num1, num2);
-    return { a, b: b === 0 ? 1 : b };
+    return { a, b };
 }
 
 function selectTargetPrice(a, b) {
@@ -1358,12 +1509,10 @@ function checkAndFireAutoHedge(leadingCorner, isHedgeByFav, targetRatio) {
 
 
 function calculateActionAndAdvisor(netRed, netBlue) {
-    const liveFavCorner = (document.getElementById('liveFavCorner') || {}).value || 'red';
     const rawA = (document.getElementById('liveOddA') || {}).value;
     const rawB = (document.getElementById('liveOddB') || {}).value;
-    let oddA = parseFloat(rawA) || 0;
-    let oddB = parseFloat(rawB) || 0;
-    if (oddA > 0 && oddB > 0 && oddA < oddB) { const tmp = oddA; oddA = oddB; oddB = tmp; }
+    const oddA = parseFloat(rawA) || 0;
+    const oddB = parseFloat(rawB) || 0;
 
     const targetBox = document.getElementById('targetBox');
     const actionCard = document.getElementById('actionCard');
@@ -1436,8 +1585,8 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             actionStakeEl.className = "stake-badge";
             actionStakeEl.onclick = null;
         }
-        if (resultRedVal) resultRedVal.innerHTML = '<span class="text-green">กำไร +' + Math.round(netRed).toLocaleString() + ' B</span>';
-        if (resultBlueVal) resultBlueVal.innerHTML = '<span class="text-green">กำไร +' + Math.round(netBlue).toLocaleString() + ' B</span>';
+        if (resultRedVal) resultRedVal.innerHTML = '<span class="text-green">กำไร +' + Math.floor(netRed).toLocaleString() + ' B</span>';
+        if (resultBlueVal) resultBlueVal.innerHTML = '<span class="text-green">กำไร +' + Math.floor(netBlue).toLocaleString() + ' B</span>';
         if (statusBadge) statusBadge.innerText = "สมดุล";
         if (btnOneClickHedge) {
             btnOneClickHedge.disabled = true;
@@ -1453,26 +1602,16 @@ function calculateActionAndAdvisor(netRed, netBlue) {
     let targetCorner = leadingCorner === 'red' ? 'blue' : 'red';
     let targetCornerText = targetCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
 
-    let targetOddsText = '';
-    if (targetCorner === 'red') {
-        const redOddsEl = document.getElementById('redOddsText');
-        targetOddsText = redOddsEl ? redOddsEl.innerText : '';
-    } else {
-        const blueOddsEl = document.getElementById('blueOddsText');
-        targetOddsText = blueOddsEl ? blueOddsEl.innerText : '';
-    }
-
-    const parsedTargetOdds = qbParseOddsText(targetOddsText);
-    let targetOddA = oddA;
-    let targetOddB = oddB;
-
-    if (parsedTargetOdds) {
-        targetOddA = parsedTargetOdds.a;
-        targetOddB = parsedTargetOdds.b;
-    }
-
-    const targetRatio = targetOddA / targetOddB;
-    let isHedgeByFav = (liveFavCorner === targetCorner);
+    const liveRed = currentPrice.red;
+    const liveBlue = currentPrice.blue;
+    const targetOdds = targetCorner === 'red' ? liveRed : liveBlue;
+    const targetOddA = parseFloat(targetOdds.a) || 0;
+    const targetOddB = parseFloat(targetOdds.b) || 0;
+    const targetSide = deriveSideFromOdds(targetOddA, targetOddB);
+    const targetRatio = (targetOddA > 0 && targetOddB > 0)
+        ? Math.max(targetOddA, targetOddB) / Math.min(targetOddA, targetOddB)
+        : 0;
+    const isHedgeByFav = (targetSide === 'fav');
 
     // อัปเดตสีไฮไลท์ปุ่มกลยุทธ์ทั้ง 4 ปุ่มตามเงื่อนไขความพร้อม (ส้ม/เขียว/เหลือง/ฟ้า)
     updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingProfit, isHedgeByFav, targetRatio);
@@ -1604,14 +1743,14 @@ function calculateActionAndAdvisor(netRed, netBlue) {
 
     if (resultRedVal) {
         resultRedVal.innerHTML = finalRedProf >= 0 
-            ? '<span class="text-green">กำไร +' + Math.round(finalRedProf).toLocaleString() + ' B</span>' 
-            : '<span class="text-red">ขาดทุน ' + Math.round(finalRedProf).toLocaleString() + ' B</span>';
+            ? '<span class="text-green">กำไร +' + Math.floor(finalRedProf).toLocaleString() + ' B</span>' 
+            : '<span class="text-red">ขาดทุน ' + Math.floor(finalRedProf).toLocaleString() + ' B</span>';
     }
 
     if (resultBlueVal) {
         resultBlueVal.innerHTML = finalBlueProf >= 0 
-            ? '<span class="text-green">กำไร +' + Math.round(finalBlueProf).toLocaleString() + ' B</span>' 
-            : '<span class="text-red">ขาดทุน ' + Math.round(finalBlueProf).toLocaleString() + ' B</span>';
+            ? '<span class="text-green">กำไร +' + Math.floor(finalBlueProf).toLocaleString() + ' B</span>' 
+            : '<span class="text-red">ขาดทุน ' + Math.floor(finalBlueProf).toLocaleString() + ' B</span>';
     }
 
     evaluateMuayExpertDecision(netRed, netBlue, isReady);
@@ -1638,11 +1777,14 @@ function renderAdvancePlanTable(netRed, netBlue) {
     let laggingProfit = Math.min(netRed, netBlue);
     let targetCornerText = leadingCorner === 'red' ? '🔵 น้ำเงิน' : '🔴 แดง';
 
-    const rawLiveA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
-    const rawLiveB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
-    let liveOddA = rawLiveA, liveOddB = rawLiveB;
-    if (liveOddA > 0 && liveOddB > 0 && liveOddA < liveOddB) { const t = liveOddA; liveOddA = liveOddB; liveOddB = t; }
-    const liveRatio = (liveOddA > 0 && liveOddB > 0) ? (liveOddA / liveOddB) : 0;
+    const redOdds = currentPrice.red || { a: NaN, b: NaN };
+    const blueOdds = currentPrice.blue || { a: NaN, b: NaN };
+    const targetOdds = leadingCorner === 'red' ? blueOdds : redOdds;
+    const liveOddA = parseFloat(targetOdds.a) || 0;
+    const liveOddB = parseFloat(targetOdds.b) || 0;
+    const liveRatio = (liveOddA > 0 && liveOddB > 0)
+        ? Math.max(liveOddA, liveOddB) / Math.min(liveOddA, liveOddB)
+        : 0;
 
     let targets = [];
     if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculateMultiTargets) {
@@ -1675,7 +1817,7 @@ function renderAdvancePlanTable(netRed, netBlue) {
                 leadingCorner,
                 leadingProfit,
                 laggingProfit,
-                isHedgeByFav: false,
+                isHedgeByFav: deriveSideFromOdds(liveOddA, liveOddB) === 'fav',
                 targetRatio: liveRatio,
                 skewTarget: currentStrategy === 'skew_runner' ? skewTarget70 : 'auto',
                 breakevenTarget: currentStrategy === 'breakeven' ? breakevenProfitTarget : 'auto'
@@ -1721,14 +1863,27 @@ function renderAdvancePlanTable(netRed, netBlue) {
             setPreSetTargetFromTable(t.oddsValue, t.label);
         };
 
+        const renderCornerBadge = (corner, odds) => {
+            const side = deriveSideFromOdds(odds.a, odds.b);
+            const icon = side === 'fav' ? '🟢' : (side === 'dog' ? '🟠' : '⚪');
+            const bg = side === 'fav' ? '#059669' : (side === 'dog' ? '#c2410c' : '#64748b');
+            const a = odds.a === undefined || Number.isNaN(Number(odds.a)) ? '-' : odds.a;
+            const b = odds.b === undefined || Number.isNaN(Number(odds.b)) ? '-' : odds.b;
+            return '<span class="corner-status-badge" style="background:' + bg + '; color:#fff; padding:3px 6px; border-radius:6px; font-weight:700; font-size:0.75rem; white-space:nowrap;">' +
+                '[' + corner.toUpperCase() + ' ' + icon + ' ' + side.toUpperCase() + ' ' + a + ':' + b + ']</span>';
+        };
         const tierBadge = t.tierLabel ? '<div class="tier-pill tier-' + t.tier + '">' + t.tierLabel + '</div>' : '';
+        const leadingOdds = leadingCorner === 'red' ? redOdds : blueOdds;
+        const targetOdds = leadingCorner === 'red' ? blueOdds : redOdds;
+        const leadingLabel = leadingCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
+        const targetLabel = leadingCorner === 'red' ? '🔵 น้ำเงิน' : '🔴 แดง';
 
         tr.innerHTML = '<td style="font-weight:bold;">' +
                 t.label +
                 tierBadge +
             '</td>' +
-            '<td style="color:' + (leadingCorner === 'red' ? 'var(--red-side)' : 'var(--blue-side)') + '">' + (leadingCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน') + '</td>' +
-            '<td>รอง ' + targetCornerText + '</td>' +
+            '<td style="color:' + (leadingCorner === 'red' ? 'var(--red-side)' : 'var(--blue-side)') + '">' + leadingLabel + '<br>' + renderCornerBadge(leadingCorner, leadingOdds) + '</td>' +
+            '<td>' + targetLabel + '<br>' + renderCornerBadge(targetCorner, targetOdds) + '</td>' +
             '<td style="font-weight:bold; color: var(--primary);">' + Math.round(t.stake).toLocaleString() + '</td>' +
             '<td class="' + (t.finalRed >= 0 ? 'text-green' : 'text-red') + '">' + (t.finalRed >= 0 ? '+' : '') + Math.round(t.finalRed).toLocaleString() + '</td>' +
             '<td class="' + (t.finalBlue >= 0 ? 'text-green' : 'text-red') + '">' + (t.finalBlue >= 0 ? '+' : '') + Math.round(t.finalBlue).toLocaleString() + '</td>';
@@ -1759,6 +1914,7 @@ function toggleAutoSync() {
 }
 
 const muayChannel = new BroadcastChannel('muay_channel');
+window.muayChannel = muayChannel;
 
 muayChannel.onmessage = function(event) {
     if (_isHedgeExecuting) return;
@@ -1807,10 +1963,15 @@ muayChannel.onmessage = function(event) {
         if (liveFavCorner) liveFavCorner.value = '';
         if (liveDogCorner) liveDogCorner.value = '';
 
+        currentPrice.red = { a: NaN, b: NaN, raw: null };
+        currentPrice.blue = { a: NaN, b: NaN, raw: null };
+        currentPrice.favCorner = null;
+        currentPrice.oddA = NaN;
+        currentPrice.oddB = NaN;
+
         if (typeof calculateAll === 'function') calculateAll();
         return;
     }
-
 
     if (redOddsEl && data.rawRedText !== undefined) redOddsEl.innerText = '🔴 แดง: ' + (data.rawRedText || '-');
     if (blueOddsEl && data.rawBlueText !== undefined) blueOddsEl.innerText = '🔵 น้ำเงิน: ' + (data.rawBlueText || '-');
@@ -1838,49 +1999,110 @@ muayChannel.onmessage = function(event) {
         }
     }
 
-    const redParsed = parseOddsPreserveOrder(data.rawRedText);
-    const blueParsed = parseOddsPreserveOrder(data.rawBlueText);
+    let redOdds = null;
+    if (data.red && !isNaN(data.red.a) && !isNaN(data.red.b)) {
+        redOdds = { a: parseFloat(data.red.a), b: parseFloat(data.red.b), raw: data.rawRedText || data.red.raw || `${data.red.a}:${data.red.b}` };
+    } else if (data.rawRedText) {
+        const parsed = parseOddsPreserveOrder(data.rawRedText);
+        if (parsed) redOdds = { a: parsed.a, b: parsed.b, raw: data.rawRedText };
+    }
 
-    let finalFavCorner = null;
-    let finalFavA = 0, finalFavB = 0;
-    let finalDogCorner = null;
-    let finalDogA = 0, finalDogB = 0;
-    let resolved = false;
+    let blueOdds = null;
+    if (data.blue && !isNaN(data.blue.a) && !isNaN(data.blue.b)) {
+        blueOdds = { a: parseFloat(data.blue.a), b: parseFloat(data.blue.b), raw: data.rawBlueText || data.blue.raw || `${data.blue.a}:${data.blue.b}` };
+    } else if (data.rawBlueText) {
+        const parsed = parseOddsPreserveOrder(data.rawBlueText);
+        if (parsed) blueOdds = { a: parsed.a, b: parsed.b, raw: data.rawBlueText };
+    }
 
-    if (redParsed && blueParsed) {
-        const redFavLike = redParsed.a > redParsed.b;
-        const blueFavLike = blueParsed.a > blueParsed.b;
-
-        if (redFavLike && !blueFavLike) {
-            finalFavCorner = 'red'; finalFavA = redParsed.a; finalFavB = redParsed.b;
-            finalDogCorner = 'blue'; finalDogA = blueParsed.a; finalDogB = blueParsed.b;
-            resolved = true;
-        } else if (blueFavLike && !redFavLike) {
-            finalFavCorner = 'blue'; finalFavA = blueParsed.a; finalFavB = blueParsed.b;
-            finalDogCorner = 'red'; finalDogA = redParsed.a; finalDogB = redParsed.b;
-            resolved = true;
+    // Fallback for legacy payload that only sends favCorner, oddA, oddB
+    if (!redOdds && !blueOdds && data.favCorner && data.oddA && data.oddB) {
+        const a = parseFloat(data.oddA);
+        const b = parseFloat(data.oddB);
+        if (data.favCorner === 'red') {
+            redOdds = { a, b, raw: `${a}:${b}` };
+            blueOdds = { a: b, b: a, raw: `${b}:${a}` };
+        } else if (data.favCorner === 'blue') {
+            blueOdds = { a, b, raw: `${a}:${b}` };
+            redOdds = { a: b, b: a, raw: `${b}:${a}` };
         }
     }
 
-    if (!resolved && data.favCorner && data.oddA && data.oddB) {
-        finalFavCorner = data.favCorner;
-        finalFavA = data.oddA;
-        finalFavB = data.oddB;
-        finalDogCorner = (data.favCorner === 'red') ? 'blue' : 'red';
+    currentPrice.red = redOdds ? cloneOdds(redOdds) : { a: NaN, b: NaN, raw: null };
+    currentPrice.blue = blueOdds ? cloneOdds(blueOdds) : { a: NaN, b: NaN, raw: null };
 
-        if (finalDogCorner === 'red' && redParsed) { finalDogA = redParsed.a; finalDogB = redParsed.b; resolved = true; }
-        else if (finalDogCorner === 'blue' && blueParsed) { finalDogA = blueParsed.a; finalDogB = blueParsed.b; resolved = true; }
-    }
+    const { redStatus, blueStatus } = deriveCornerStatuses(currentPrice.red, currentPrice.blue);
 
-    if (liveFavCorner && finalFavCorner && finalFavA > 0 && finalFavB > 0) {
-        liveFavCorner.value = finalFavCorner;
-        if (liveOddA) liveOddA.value = finalFavA;
-        if (liveOddB) liveOddB.value = finalFavB;
-    }
-    if (liveDogCorner && finalDogCorner && finalDogA > 0 && finalDogB > 0) {
-        liveDogCorner.value = finalDogCorner;
-        if (dogOddA) dogOddA.value = finalDogA;
-        if (dogOddB) dogOddB.value = finalDogB;
+    if (redStatus === 'fav' && blueStatus === 'dog') {
+        if (liveFavCorner) liveFavCorner.value = 'red';
+        if (liveOddA) liveOddA.value = currentPrice.red.a;
+        if (liveOddB) liveOddB.value = currentPrice.red.b;
+        if (liveDogCorner) liveDogCorner.value = 'blue';
+        if (dogOddA) dogOddA.value = currentPrice.blue.a;
+        if (dogOddB) dogOddB.value = currentPrice.blue.b;
+    } else if (redStatus === 'dog' && blueStatus === 'fav') {
+        if (liveFavCorner) liveFavCorner.value = 'blue';
+        if (liveOddA) liveOddA.value = currentPrice.blue.a;
+        if (liveOddB) liveOddB.value = currentPrice.blue.b;
+        if (liveDogCorner) liveDogCorner.value = 'red';
+        if (dogOddA) dogOddA.value = currentPrice.red.a;
+        if (dogOddB) dogOddB.value = currentPrice.red.b;
+    } else if (redStatus === 'fav' && blueStatus === 'fav') {
+        if (liveFavCorner) liveFavCorner.value = 'red';
+        if (liveOddA) liveOddA.value = currentPrice.red.a;
+        if (liveOddB) liveOddB.value = currentPrice.red.b;
+        if (liveDogCorner) liveDogCorner.value = '';
+        if (dogOddA) dogOddA.value = '';
+        if (dogOddB) dogOddB.value = '';
+    } else if (redStatus === 'even' && blueStatus === 'even') {
+        if (liveFavCorner) liveFavCorner.value = '';
+        if (liveOddA) liveOddA.value = '';
+        if (liveOddB) liveOddB.value = '';
+        if (liveDogCorner) liveDogCorner.value = '';
+        if (dogOddA) dogOddA.value = '';
+        if (dogOddB) dogOddB.value = '';
+    } else if (redStatus === 'dog' && blueStatus === 'dog') {
+        if (liveFavCorner) liveFavCorner.value = '';
+        if (liveOddA) liveOddA.value = '';
+        if (liveOddB) liveOddB.value = '';
+        if (liveDogCorner) liveDogCorner.value = '';
+        if (dogOddA) dogOddA.value = '';
+        if (dogOddB) dogOddB.value = '';
+    } else if (redStatus === 'fav') {
+        if (liveFavCorner) liveFavCorner.value = 'red';
+        if (liveOddA) liveOddA.value = currentPrice.red.a;
+        if (liveOddB) liveOddB.value = currentPrice.red.b;
+        if (liveDogCorner) liveDogCorner.value = '';
+        if (dogOddA) dogOddA.value = '';
+        if (dogOddB) dogOddB.value = '';
+    } else if (blueStatus === 'fav') {
+        if (liveFavCorner) liveFavCorner.value = 'blue';
+        if (liveOddA) liveOddA.value = currentPrice.blue.a;
+        if (liveOddB) liveOddB.value = currentPrice.blue.b;
+        if (liveDogCorner) liveDogCorner.value = '';
+        if (dogOddA) dogOddA.value = '';
+        if (dogOddB) dogOddB.value = '';
+    } else if (redStatus === 'dog') {
+        if (liveDogCorner) liveDogCorner.value = 'red';
+        if (dogOddA) dogOddA.value = currentPrice.red.a;
+        if (dogOddB) dogOddB.value = currentPrice.red.b;
+        if (liveFavCorner) liveFavCorner.value = '';
+        if (liveOddA) liveOddA.value = '';
+        if (liveOddB) liveOddB.value = '';
+    } else if (blueStatus === 'dog') {
+        if (liveDogCorner) liveDogCorner.value = 'blue';
+        if (dogOddA) dogOddA.value = currentPrice.blue.a;
+        if (dogOddB) dogOddB.value = currentPrice.blue.b;
+        if (liveFavCorner) liveFavCorner.value = '';
+        if (liveOddA) liveOddA.value = '';
+        if (liveOddB) liveOddB.value = '';
+    } else {
+        if (liveFavCorner) liveFavCorner.value = '';
+        if (liveOddA) liveOddA.value = '';
+        if (liveOddB) liveOddB.value = '';
+        if (liveDogCorner) liveDogCorner.value = '';
+        if (dogOddA) dogOddA.value = '';
+        if (dogOddB) dogOddB.value = '';
     }
 
     if (typeof calculateAll === 'function') {
