@@ -740,47 +740,6 @@ input[type="number"]::-webkit-inner-spin-button {
 .btn-bullet.b3 b { color: #fb923c; }
 .btn-bullet.b3:hover { background: rgba(249, 115, 22, 0.2); }
 
-/* ============================================================
-   🚨 EMERGENCY RESCUE HUD CARD (Live กล่องกู้ชีพฉุกเฉิน)
-   ============================================================ */
-.emergency-rescue-card {
-    background: linear-gradient(135deg, rgba(30, 20, 10, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-    border: 1.5px solid rgba(249, 115, 22, 0.5);
-    border-radius: 12px;
-    padding: 12px;
-    box-shadow: 0 4px 20px rgba(249, 115, 22, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-}
-.emergency-rescue-card.hidden { display: none; }
-.emergency-rescue-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px dashed rgba(249, 115, 22, 0.3);
-    transition: background 0.2s;
-    border-radius: 6px;
-    padding: 4px 6px;
-    margin: -4px -6px 8px -6px;
-}
-.emergency-rescue-header:hover {
-    background: rgba(249, 115, 22, 0.08);
-}
-.emergency-rescue-card.collapsed .emergency-rescue-header {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-.emergency-title {
-    font-size: 0.85rem;
-    font-weight: 800;
-    color: #ffedd5;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.pulse-icon { animation: pulseHighRisk 1.5s infinite; }
 .emg-badge {
     font-size: 0.7rem;
     padding: 2px 8px;
@@ -789,83 +748,6 @@ input[type="number"]::-webkit-inner-spin-button {
     background: rgba(239, 68, 68, 0.25);
     color: #fca5a5;
     border: 1px solid rgba(239, 68, 68, 0.5);
-}
-.emg-info-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.78rem;
-    color: #cbd5e1;
-    margin-bottom: 6px;
-}
-.emg-plan-box {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(249, 115, 22, 0.3);
-    border-radius: 8px;
-    padding: 8px 10px;
-    margin-bottom: 8px;
-}
-.emg-plan-label {
-    font-size: 0.7rem;
-    color: #fb923c;
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-.emg-plan-detail {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #ffffff;
-}
-.emg-preview-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-bottom: 10px;
-}
-.emg-preview-item {
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    padding: 6px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.emg-preview-item span {
-    font-size: 0.68rem;
-    color: #94a3b8;
-}
-.emg-preview-item b {
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-.text-orange { color: #fb923c; }
-
-.btn-execute-rescue {
-    width: 100%;
-    padding: 9px 12px;
-    background: linear-gradient(135deg, #f97316 0%, #d97706 100%);
-    border: 1px solid rgba(254, 215, 170, 0.4);
-    border-radius: 8px;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 0.82rem;
-    cursor: pointer;
-    box-shadow: 0 3px 12px rgba(249, 115, 22, 0.25);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-}
-.btn-execute-rescue:hover {
-    background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.35);
-    border-color: rgba(255, 255, 255, 0.6);
-}
-.btn-execute-rescue:active {
-    transform: translateY(1px);
 }
 
 /* ============================================================

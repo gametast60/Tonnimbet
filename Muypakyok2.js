@@ -775,7 +775,6 @@ function calculateAll() {
     syncPartialCutLossFromPortfolio(netRed, netBlue);
     calculateActionAndAdvisor(netRed, netBlue);
     update3BulletUI();
-    updateEmergencyRescueUI();
 
     // 🥊 อัปเดตไฟกระพริบที่ Avatar นวมของฝั่งที่เป็นต่อ (Favorite Flashing Indicator)
     const liveFav = (document.getElementById('liveFavCorner') || {}).value;
@@ -858,165 +857,7 @@ function apply3BulletStake(bulletKey) {
     }
 }
 
-// 🚨 Update Live Emergency Rescue HUD Card
-function updateEmergencyRescueUI() {
-    const cardEl = document.getElementById('emergencyRescueCard');
-    if (!cardEl) return;
-
-    if (typeof PriceJourneyEngine === 'undefined' || !PriceJourneyEngine.calculateEmergencyRescue) return;
-
-    const redOddsEl  = document.getElementById('redOddsText');
-    const blueOddsEl = document.getElementById('blueOddsText');
-    const redParsed  = redOddsEl  ? qbParseOddsText(redOddsEl.innerText)  : null;
-    const blueParsed = blueOddsEl ? qbParseOddsText(blueOddsEl.innerText) : null;
-
-    const liveFav = (document.getElementById('liveFavCorner') || {}).value || 'red';
-    const liveA = parseFloat((document.getElementById('liveOddA') || {}).value) || 1;
-    const liveB = parseFloat((document.getElementById('liveOddB') || {}).value) || 1;
-    const totalCap = parseFloat((document.getElementById('totalCapital') || {}).value) || 0;
-
-    const redA  = redParsed  ? redParsed.a  : liveA;
-    const redB  = redParsed  ? redParsed.b  : liveB;
-    const blueA = blueParsed ? blueParsed.a : liveA;
-    const blueB = blueParsed ? blueParsed.b : liveB;
-
-    const rescue = PriceJourneyEngine.calculateEmergencyRescue({
-        tickets: tickets,
-        currentPrice: {
-            favCorner: liveFav,
-            oddA: liveA,
-            oddB: liveB,
-            redSide: { a: redA, b: redB, raw: redOddsEl ? redOddsEl.innerText : '' },
-            blueSide: { a: blueA, b: blueB, raw: blueOddsEl ? blueOddsEl.innerText : '' }
-        },
-        totalCapital: totalCap
-    });
-
-    window._currentRescuePlan = rescue;
-
-    // ✅ แสดงกล่องเสมอ (ไม่ซ่อน) — แต่ body จะโชว์เฉพาะเมื่อมีความเสี่ยงจริง
-    cardEl.classList.remove('hidden');
-
-    const badgeEl = document.getElementById('emgStatusBadge');
-    const bodyEl  = document.getElementById('emergencyRescueBody');
-    const iconEl  = document.getElementById('emgCollapseIcon');
-
-    if (!rescue || !rescue.isNeeded) {
-        // ไม่มีแผล / ไม่มีความเสี่ยง: badge = รอสถานการณ์, ซ่อน body
-        if (badgeEl) {
-            badgeEl.textContent = 'ยังไม่มีแผล';
-            badgeEl.style.background = 'rgba(100,116,139,0.25)';
-            badgeEl.style.color = '#94a3b8';
-            badgeEl.style.borderColor = 'rgba(100,116,139,0.4)';
-        }
-        if (bodyEl) bodyEl.style.display = 'none';
-        if (iconEl) iconEl.style.display = 'none';
-        _emgBodyExpanded = false;
-        return;
-    }
-
-    // มีความเสี่ยง: badge = พร้อมกู้ชีพ — ไม่บังคับขยาย ให้ผู้ใช้กดเองถ้าต้องการดูรายละเอียด
-    if (badgeEl) {
-        badgeEl.textContent = 'พร้อมกู้ชีพ';
-        badgeEl.style.background = '';
-        badgeEl.style.color = '';
-        badgeEl.style.borderColor = '';
-    }
-    if (iconEl) iconEl.style.display = '';
-
-    const holdEl    = document.getElementById('emgCurrentHold');
-    const planEl    = document.getElementById('emgPlanDetail');
-    const leadNameEl = document.getElementById('emgLeadingCornerName');
-    const leadResEl  = document.getElementById('emgLeadingResultText');
-    const dangNameEl = document.getElementById('emgDangerCornerName');
-    const dangResEl  = document.getElementById('emgDangerResultText');
-    const btnRescue  = document.getElementById('btnExecuteRescue');
-
-    const holdSideText   = rescue.holdingCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
-    const dangerSideText = rescue.dangerCorner  === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
-
-    if (holdEl) holdEl.innerHTML = `<span style="color:${rescue.holdingCorner==='red'?'#ef4444':'#3b82f6'}; font-weight:bold;">${holdSideText}</span> (เสี่ยงเสีย <span class="text-red">-${rescue.currentRiskLoss.toLocaleString()} B</span>)`;
-    if (planEl) planEl.textContent = rescue.actionSummary;
-    if (leadNameEl) leadNameEl.textContent = holdSideText;
-    if (leadResEl) {
-        leadResEl.textContent = `${rescue.finalLeadingProfit >= 0 ? '+' : ''}${rescue.finalLeadingProfit.toLocaleString()} B (เสมอตัว คืนทุน)`;
-        leadResEl.className = rescue.finalLeadingProfit >= 0 ? 'text-green' : 'text-red';
-    }
-    if (dangNameEl) dangNameEl.textContent = dangerSideText;
-    if (dangResEl) {
-        dangResEl.textContent = `${rescue.finalDangerProfit >= 0 ? '+' : ''}${rescue.finalDangerProfit.toLocaleString()} B (ล็อคขาดทุนไม่เกิน ${Math.abs(rescue.finalDangerProfit).toLocaleString()} B)`;
-        dangResEl.className = rescue.finalDangerProfit >= 0 ? 'text-green' : 'text-red';
-    }
-    if (btnRescue) {
-        btnRescue.innerHTML = `<span>🚨 กดยืนยันกู้ชีพทันที (แทงสวน ${dangerSideText} ${rescue.rescueStake.toLocaleString()} B)</span>`;
-    }
-}
-
-// 🚨 Execute 1-Click Emergency Rescue
-function executeEmergencyRescue() {
-    if (_isHedgeExecuting) {
-        return;
-    }
-    // 🔄 Re-calculate จากราคาสดล่าสุดก่อนเสมอ ป้องกันปัญหา plan stale
-    if (typeof updateEmergencyRescueUI === 'function') {
-        updateEmergencyRescueUI();
-    }
-    const plan = window._currentRescuePlan;
-    if (!plan || !plan.isNeeded) {
-        alert('⚠️ ไม่จำเป็นต้องกู้ชีพในสถานะปัจจุบัน');
-        return;
-    }
-    const rescueSnapshot = Object.assign({}, plan);
-    const { targetCorner, rescueStake } = rescueSnapshot;
-    if (rescueStake <= 0) {
-        alert('⚠️ ยอดกู้ชีพต้องมากกว่า 0 บาทครับ');
-        return;
-    }
-
-    _isHedgeExecuting = true;
-    clearTimeout(_hedgeExecutionTimer);
-    _hedgeExecutionTimer = setTimeout(() => {
-        _isHedgeExecuting = false;
-    }, 1500);
-
-    const betInput = document.getElementById('qbBetAmount');
-    if (betInput) {
-        betInput.value = rescueStake;
-        betInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    if (typeof qbTriggerAutoBet === 'function') {
-        qbTriggerAutoBet(targetCorner, rescueStake);
-    }
-
-    console.log(`%c[Emergency Rescue] 🚨 ส่งคำสั่งกู้ชีพสำเร็จ: ${targetCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน'} ยอด ${rescueStake.toLocaleString()} B`, 'color:#ea580c;font-weight:bold;');
-
-    try {
-        if (typeof SoundEngine !== 'undefined' && SoundEngine.playHedgeSuccessSound) {
-            SoundEngine.playHedgeSuccessSound();
-        }
-    } catch(e) {}
-}
-
 window.apply3BulletStake = apply3BulletStake;
-window.executeEmergencyRescue = executeEmergencyRescue;
-
-// 🚨 Toggle collapse/expand Emergency Rescue Body
-let _emgBodyExpanded = false;
-function toggleEmergencyRescueBody() {
-    const body = document.getElementById('emergencyRescueBody');
-    const icon = document.getElementById('emgCollapseIcon');
-    if (!body) return;
-    _emgBodyExpanded = !_emgBodyExpanded;
-    if (_emgBodyExpanded) {
-        body.style.display = '';
-        if (icon) icon.textContent = '▲ ย่อ';
-    } else {
-        body.style.display = 'none';
-        if (icon) icon.textContent = '▼ ขยาย';
-    }
-}
-window.toggleEmergencyRescueBody = toggleEmergencyRescueBody;
 
 function qbParseOddsText(text) {
     if (!text) return null;
@@ -2080,7 +1921,6 @@ window.muayChannel = muayChannel;
 
 muayChannel.onmessage = function(event) {
     // 🚫 ห้ามบล็อกราคาสด — อนุญาตให้ราคาใหม่ผ่านได้เสมอ
-    // (เฉพาะ bet action จริงๆ ถูก guard ไว้ที่ executeEmergencyRescue แล้ว)
     if (!isAutoSyncEnabled) return;
 
     const data = event.data;

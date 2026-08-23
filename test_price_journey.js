@@ -513,64 +513,6 @@ runTest('3-Bullet Money Management 40/40/20 Allocation', () => {
   assert.strictEqual(alloc.bullet1.amount + alloc.bullet2.amount + alloc.bullet3.amount, 1000);
 });
 
-// 39. Emergency Rescue & Loss-Capping Calculation
-runTest('Emergency Rescue HUD calculation', () => {
-  const { calculateEmergencyRescue } = engine;
-  // User enters Red @ 5:4 stake 1000 (Win +1000 / Risk -1250)
-  const tickets = [{ id: 1, corner: 'red', side: 'fav', a: 5, b: 4, stake: 1000 }];
-  // Price drops and flips to Blue @ 2:1
-  const rescue = calculateEmergencyRescue({
-    tickets,
-    currentPrice: {
-      favCorner: 'blue', oddA: 2, oddB: 1,
-      redSide: { a: 1, b: 2 }, blueSide: { a: 2, b: 1 }
-    },
-    totalCapital: 1000
-  });
-
-  assert.strictEqual(rescue.isNeeded, true);
-  assert.strictEqual(rescue.holdingCorner, 'red');
-  assert.strictEqual(rescue.dangerCorner, 'blue');
-  assert.strictEqual(rescue.currentRiskLoss, 1250);
-  assert.strictEqual(rescue.targetCorner, 'blue');
-  assert.strictEqual(rescue.targetSide, 'fav');
-  // At Blue 2:1 Fav, stake needed = 1000 / 2 = 500 B
-  assert.strictEqual(rescue.rescueStake, 500);
-  assert.strictEqual(rescue.finalLeadingProfit, 0, 'Leading side (Red) becomes Breakeven 0 B');
-  assert.strictEqual(rescue.finalDangerProfit, -750, 'Loss on Blue reduced significantly from -1250');
-  assert.ok(rescue.lossCappedPercent > 0);
-});
-
-// 40. Emergency Rescue with Two-Sided Separate Odds
-runTest('Emergency Rescue using Two-Sided Specific Odds', () => {
-  const { calculateEmergencyRescue } = engine;
-  // User holds Blue (Win +2000 / Risk -2500)
-  const tickets = [{ id: 1, corner: 'blue', side: 'fav', a: 5, b: 4, stake: 2000 }];
-  // Market shifts: Blue is 3:1 fav, but Red underdog button offers 1:2 (pay 2:1)
-  const rescue = calculateEmergencyRescue({
-    tickets,
-    currentPrice: {
-      favCorner: 'blue',
-      oddA: 3,
-      oddB: 1,
-      redSide: { a: 1, b: 2, raw: '🔴 แดง: HDP 1 : 2' },
-      blueSide: { a: 3, b: 1, raw: '🔵 น้ำเงิน: 3 : 1 HDP' }
-    },
-    totalCapital: 2000
-  });
-
-  assert.strictEqual(rescue.isNeeded, true);
-  assert.strictEqual(rescue.holdingCorner, 'blue');
-  assert.strictEqual(rescue.dangerCorner, 'red');
-  assert.strictEqual(rescue.targetCorner, 'red');
-  assert.strictEqual(rescue.targetSide, 'dog'); // betting Red underdog
-  // Target odds should be from redSide (a=1, b=2)
-  assert.strictEqual(rescue.targetOddsA, 1);
-  assert.strictEqual(rescue.targetOddsB, 2);
-  // Stake needed = 2000
-  assert.strictEqual(rescue.rescueStake, 2000);
-  assert.strictEqual(rescue.finalLeadingProfit, 0, 'Leading Blue side becomes Breakeven');
-});
 
 // 43. Historical data integration replay
 runTest('Historical fight journeys replay without crashes', () => {

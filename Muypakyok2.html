@@ -195,45 +195,6 @@
                     </div>
                 </section>
 
-                <!-- 🚨 Live Emergency Rescue HUD Box (กล่องกู้ชีพฉุกเฉินแสดงผลสด Real-time) -->
-                <div id="emergencyRescueCard" class="emergency-rescue-card">
-                    <div class="emergency-rescue-header" onclick="toggleEmergencyRescueBody()" style="cursor:pointer;" title="คลิกเพื่อย่อ/ขยายกล่องกู้ชีพ">
-                        <div class="emergency-title">
-                            <span class="pulse-icon">🚨</span>
-                            <span id="emgTitleText">กล่องกู้ชีพฉุกเฉิน (Emergency Rescue)</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span id="emgStatusBadge" class="emg-badge" style="background:rgba(100,116,139,0.25);color:#94a3b8;border-color:rgba(100,116,139,0.4);">ยังไม่มีแผล</span>
-                            <span id="emgCollapseIcon" style="display:none; color:#fb923c; font-size:0.75rem; font-weight:700;">▼ ขยาย</span>
-                        </div>
-                    </div>
-                    
-                    <div id="emergencyRescueBody" class="emergency-body" style="display:none;">
-                        <div class="emg-info-row">
-                            <span>📌 สถานะปัจจุบัน:</span>
-                            <b id="emgCurrentHold">-</b>
-                        </div>
-                        <div class="emg-plan-box">
-                            <div class="emg-plan-label">🛡️ แผนกู้ชีพคำนวณสด (ราคาปัจจุบัน):</div>
-                            <div class="emg-plan-detail" id="emgPlanDetail">-</div>
-                        </div>
-
-                        <div class="emg-preview-grid">
-                            <div class="emg-preview-item win-side">
-                                <span>ถ้า <span id="emgLeadingCornerName">-</span> ชนะ:</span>
-                                <b id="emgLeadingResultText">-</b>
-                            </div>
-                            <div class="emg-preview-item lose-side">
-                                <span>ถ้า <span id="emgDangerCornerName">-</span> ชนะ:</span>
-                                <b id="emgDangerResultText">-</b>
-                            </div>
-                        </div>
-
-                        <button type="button" id="btnExecuteRescue" class="btn-execute-rescue" onclick="executeEmergencyRescue()">
-                            <span>🚨 กดยืนยันกู้ชีพทันที (1-Click Emergency Exit)</span>
-                        </button>
-                    </div>
-                </div>
 
                 <!-- Action Card: สถานะการออกตัว -->
                 <div class="action-card neutral" id="actionCard">
