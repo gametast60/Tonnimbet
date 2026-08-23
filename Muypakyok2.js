@@ -5,6 +5,8 @@ let breakevenProfitTarget = 'red'; // 'red' | 'blue' — ฝั่งที่�
 let _isHedgeExecuting = false;
 let _hedgeExecutionTimer = null;
 let _priceUpdateCountSinceEntry = 0; // 🆕 grace period counter: นับครั้งที่ราคาถูกอัปเดตหลังวางตั๋วแรก
+let _lastCountedOdds = { favCorner: null, favA: null, favB: null, dogCorner: null, dogA: null, dogB: null }; // 🆕 บันทึกราคาล่าสุดที่นับ
+let _entryTargetRatio = null; // 🆕 targetRatio ตอนเข้าไม้แรก เพื่อเช็คราคาขยับ >= 0.15
 
 const standardBoxingOdds = [
     { a: 10, b: 9, val: 10/9, label: "10:9" },
@@ -152,7 +154,34 @@ function syncFavAndDogInputs(source) {
 
 function onFavOrDogChange(source) {
     syncFavAndDogInputs(source || 'fav');
-    if (tickets.length > 0) _priceUpdateCountSinceEntry++; // 🆕 grace counter
+    if (tickets.length > 0) {
+        const curFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
+        const curFavA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
+        const curFavB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+        const curDogCorner = (document.getElementById('liveDogCorner') || {}).value || '';
+        const curDogA = parseFloat((document.getElementById('dogOddA') || {}).value) || 0;
+        const curDogB = parseFloat((document.getElementById('dogOddB') || {}).value) || 0;
+
+        const isChanged = (curFavCorner !== _lastCountedOdds.favCorner) ||
+                          (curFavA !== _lastCountedOdds.favA) ||
+                          (curFavB !== _lastCountedOdds.favB) ||
+                          (curDogCorner !== _lastCountedOdds.dogCorner) ||
+                          (curDogA !== _lastCountedOdds.dogA) ||
+                          (curDogB !== _lastCountedOdds.dogB);
+
+        if (isChanged && ((curFavA > 0 && curFavB > 0) || (curDogA > 0 && curDogB > 0))) {
+            _priceUpdateCountSinceEntry++;
+            _lastCountedOdds = {
+                favCorner: curFavCorner,
+                favA: curFavA,
+                favB: curFavB,
+                dogCorner: curDogCorner,
+                dogA: curDogA,
+                dogB: curDogB
+            };
+            console.log(`%c[PriceUpdate] Genuinely changed -> count = ${_priceUpdateCountSinceEntry} (${curFavCorner} ${curFavA}:${curFavB} / ${curDogCorner} ${curDogA}:${curDogB})`, 'color: #38bdf8; font-weight: bold;');
+        }
+    }
     if (typeof calculateAll === 'function') calculateAll();
 }
 window.onFavOrDogChange = onFavOrDogChange;
@@ -241,7 +270,24 @@ function getTicketPnL(t) {
 }
 
 function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
-    if (tickets.length === 0) _priceUpdateCountSinceEntry = 0; // 🆕 reset ตอนวางตั๋วแรก
+    if (tickets.length === 0) {
+        _priceUpdateCountSinceEntry = 0; // 🆕 reset ตอนวางตั๋วแรก
+        _entryTargetRatio = null; // 🆕 reset entry target ratio
+        const curFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
+        const curFavA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
+        const curFavB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+        const curDogCorner = (document.getElementById('liveDogCorner') || {}).value || '';
+        const curDogA = parseFloat((document.getElementById('dogOddA') || {}).value) || 0;
+        const curDogB = parseFloat((document.getElementById('dogOddB') || {}).value) || 0;
+        _lastCountedOdds = {
+            favCorner: curFavCorner,
+            favA: curFavA,
+            favB: curFavB,
+            dogCorner: curDogCorner,
+            dogA: curDogA,
+            dogB: curDogB
+        };
+    }
     const aa = parseFloat(a) || 2;
     const bb = parseFloat(b) || 1;
     const actualSide = side || deriveSideFromOdds(aa, bb);
@@ -256,7 +302,11 @@ function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
 
 function removeTicket(id) {
     tickets = tickets.filter(t => t.id !== id);
-    if (tickets.length === 0) _priceUpdateCountSinceEntry = 0; // 🆕 reset เมื่อลบตั๋วทั้งหมด
+    if (tickets.length === 0) {
+        _priceUpdateCountSinceEntry = 0; // 🆕 reset เมื่อลบตั๋วทั้งหมด
+        _entryTargetRatio = null;
+        _lastCountedOdds = { favCorner: null, favA: null, favB: null, dogCorner: null, dogA: null, dogB: null };
+    }
     renderTickets();
     calculateAll();
 }
@@ -909,6 +959,10 @@ function executeEmergencyRescue() {
     if (_isHedgeExecuting) {
         return;
     }
+    // 🔄 Re-calculate จากราคาสดล่าสุดก่อนเสมอ ป้องกันปัญหา plan stale
+    if (typeof updateEmergencyRescueUI === 'function') {
+        updateEmergencyRescueUI();
+    }
     const plan = window._currentRescuePlan;
     if (!plan || !plan.isNeeded) {
         alert('⚠️ ไม่จำเป็นต้องกู้ชีพในสถานะปัจจุบัน');
@@ -1442,7 +1496,11 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
             ? ((resEqual.minProfit - laggingProfit) / Math.abs(laggingProfit)) * 100
             : 0;
 
-        // คำนวณเงื่อนไข 3 ข้อสำหรับแนะนำ (ใช้ร่วมกันทั้ง dot และปุ่ม CTA)
+        if (_entryTargetRatio === null && targetRatio > 0) {
+            _entryTargetRatio = targetRatio;
+        }
+
+        // คำนวณเงื่อนไข 4 ข้อสำหรับแนะนำ (ใช้ร่วมกันทั้ง dot และปุ่ม CTA)
         const _fbMainNotReady = !(
             (currentStrategy === 'skew_runner' && isSkewReady) ||
             (currentStrategy === 'equal' && isEqualReady) ||
@@ -1451,10 +1509,12 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         );
         const _fbGraceOk = _priceUpdateCountSinceEntry >= 4;
         const _fbRecoveryOk = recoveryPct >= 80;
-        const _fbIsRecommended = _fbMainNotReady && _fbGraceOk && _fbRecoveryOk;
+        const _diffPrice = (_entryTargetRatio !== null) ? Math.abs(targetRatio - _entryTargetRatio) : 0;
+        const _fbPriceMoved = _diffPrice >= 0.15;
+        const _fbIsRecommended = _fbMainNotReady && _fbGraceOk && _fbRecoveryOk && _fbPriceMoved;
 
         console.log(
-            '%c[ForcedFallback] grace=' + _priceUpdateCountSinceEntry + '/4 recovery=' + recoveryPct.toFixed(1) + '% mainNotReady=' + _fbMainNotReady + ' → recommended=' + _fbIsRecommended,
+            '%c[ForcedFallback] grace=' + _priceUpdateCountSinceEntry + '/4 recovery=' + recoveryPct.toFixed(1) + '% priceDiff=' + _diffPrice.toFixed(2) + ' (>=0.15: ' + _fbPriceMoved + ') mainNotReady=' + _fbMainNotReady + ' → recommended=' + _fbIsRecommended,
             'color: ' + (_fbIsRecommended ? '#4ade80' : '#fb923c') + '; font-size: 0.85rem;'
         );
 
@@ -1464,10 +1524,10 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
             finalBlueProf: resEqual.finalBlueProf,
             minProfit: resEqual.minProfit,
             recoveryPct,
-            isRecommended: _fbIsRecommended  // 🆕 ครบ 3 เงื่อนไขถึงจะ true
+            isRecommended: _fbIsRecommended  // 🆕 ครบ 4 เงื่อนไขถึงจะ true
         };
 
-        // 🆕 เช็คเงื่อนไขแนะนำ (highlight dot) — ครบ 3 ข้อ: หลักยังไม่ ready + grace >=4 + recovery >=80%
+        // 🆕 เช็คเงื่อนไขแนะนำ (highlight dot) — ครบ 4 ข้อ: หลักยังไม่ ready + grace >=4 + recovery >=80% + priceMoved >=0.15
         const dotEl = document.getElementById('fallbackReadyDot');
         if (dotEl) {
             dotEl.classList.toggle('hidden', !_fbIsRecommended);
@@ -2008,7 +2068,8 @@ const muayChannel = new BroadcastChannel('muay_channel');
 window.muayChannel = muayChannel;
 
 muayChannel.onmessage = function(event) {
-    if (_isHedgeExecuting) return;
+    // 🚫 ห้ามบล็อกราคาสด — อนุญาตให้ราคาใหม่ผ่านได้เสมอ
+    // (เฉพาะ bet action จริงๆ ถูก guard ไว้ที่ executeEmergencyRescue แล้ว)
     if (!isAutoSyncEnabled) return;
 
     const data = event.data;
