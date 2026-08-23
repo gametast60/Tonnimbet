@@ -875,6 +875,9 @@
     }
 
     // (compat wrapper — ถ้ามีจุดไหนเรียก _applyPriceToUI แบบเดิม)
+    // ⚠️ ถ้าจะเรียกฟังก์ชันนี้จากที่ไหนก็ตาม ต้องเรียก
+    // window.countPriceUpdateIfGenuinelyChanged() ตามหลัง (ก่อน calculateAll())
+    // ทุกครั้ง ไม่งั้น Forced-Exit Fallback grace counter จะไม่นับ (บั๊กเดิมที่เจอมาแล้ว 3 รอบ)
     function _applyPriceToUI(fav, a, b, silent) {
         _applyPriceToUIFromPoint({
             resolvedFav: fav, resolvedA: Math.round(a), resolvedB: Math.round(b),

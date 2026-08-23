@@ -1039,6 +1039,9 @@ function selectTargetPrice(a, b) {
         liveOddB.value = b;
     }
     syncFavAndDogInputs('fav');
+    if (typeof countPriceUpdateIfGenuinelyChanged === 'function') {
+        countPriceUpdateIfGenuinelyChanged(); // 🆕 กันไว้ก่อน เผื่อมีคนเอาฟังก์ชันนี้ไปผูกปุ่มทีหลัง
+    }
     if (typeof calculateAll === 'function') calculateAll();
 }
 
@@ -1410,6 +1413,8 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         // 🆕 ซ่อน dot fallback ด้วยเมื่อ clear
         const dotElClear = document.getElementById('fallbackReadyDot');
         if (dotElClear) dotElClear.classList.add('hidden');
+        const fallbackBtnElClear = document.getElementById('btnForcedFallback');
+        if (fallbackBtnElClear) fallbackBtnElClear.classList.remove('siren');
     };
 
     if (!leadingCorner || leadingProfit === laggingProfit || !targetRatio || targetRatio <= 0) {
@@ -1529,6 +1534,12 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         const dotEl = document.getElementById('fallbackReadyDot');
         if (dotEl) {
             dotEl.classList.toggle('hidden', !_fbIsRecommended);
+        }
+
+        // 🆕 ไซเรนกระพริบแดง-น้ำเงินที่ตัวปุ่มเอง แยกจากคลาส 'active' (ต้องกระพริบแม้ยังไม่ได้กดเข้าไปดู)
+        const fallbackBtnEl = document.getElementById('btnForcedFallback');
+        if (fallbackBtnEl) {
+            fallbackBtnEl.classList.toggle('siren', _fbIsRecommended);
         }
 
         // ——— ตรวจสอบ Auto-Hedge ที่นี่ ไม่ขึ้นกับว่าผู้ใช้อยู่แท็บไหน ———
