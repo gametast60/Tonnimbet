@@ -1527,6 +1527,40 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* ==========================================
+   🆕 ปุ่ม Forced-Exit Fallback (ทางออกสำรอง)
+   ========================================== */
+.btn-strat-fallback {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.25), rgba(251, 146, 60, 0.15));
+    color: #fdba74;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    line-height: 1.4;
+}
+.btn-strat-fallback:hover {
+    border-color: rgba(251, 146, 60, 0.65);
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.35), rgba(251, 146, 60, 0.22));
+    color: #fff;
+}
+.btn-strat-fallback.active {
+    border-color: rgba(251, 146, 60, 0.8);
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.4), rgba(251, 146, 60, 0.25));
+}
+.btn-strat-fallback small { font-size: 0.68rem; opacity: 0.8; }
+.fallback-ready-dot {
+    color: #4ade80;
+    font-size: 0.7rem;
+    animation: readyPulse 1.5s infinite;
+}
+.fallback-ready-dot.hidden { display: none; }
+
+/* ==========================================
    แถบเลือกฝั่งรันกำไร 70% (สำหรับกลยุทธ์ Skew Runner 70/30)
    ========================================== */
 .skew-target-selector {
@@ -1683,6 +1717,8 @@ input[type="number"]::-webkit-inner-spin-button {
 .action-card.ready { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(15, 23, 42, 0.95)); border: 2px solid var(--green); }
 .action-card.wait { background: linear-gradient(135deg, rgba(244, 63, 94, 0.18), rgba(15, 23, 42, 0.95)); border: 1px solid var(--red-side); }
 .action-card.neutral { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); }
+/* 🆕 Forced-Exit Fallback card: สีส้มอ่อน แยกจาก ready เขียว */
+.action-card.fallback-ref { background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(15, 23, 42, 0.95)); border: 1px dashed rgba(251, 146, 60, 0.5); }
 
 .action-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
 .action-value { font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
@@ -1728,6 +1764,19 @@ input[type="number"]::-webkit-inner-spin-button {
     color: rgba(255, 255, 255, 0.35);
     border: 1px dashed rgba(255, 255, 255, 0.12);
     cursor: not-allowed;
+}
+
+/* 🆕 ปุ่ม fallback ยังไม่แนะนำ: กดได้ แต่ไม่เขียว (ส้มอ่อน) */
+.btn-one-click-hedge.fallback-not-ready {
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.2), rgba(251, 146, 60, 0.12));
+    color: #fdba74;
+    border: 1px dashed rgba(251, 146, 60, 0.45);
+    cursor: pointer;
+}
+.btn-one-click-hedge.fallback-not-ready:hover {
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.3), rgba(251, 146, 60, 0.2));
+    color: #fff;
+    border-color: rgba(251, 146, 60, 0.7);
 }
 
 @keyframes pulseBorder {

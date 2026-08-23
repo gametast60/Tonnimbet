@@ -369,6 +369,12 @@
                         </button>
                     </div>
 
+                    <!-- 🆕 ปุ่ม Forced-Exit Fallback (ทางออกสำรอง) -->
+                    <button type="button" id="btnForcedFallback" class="btn-strat-fallback" onclick="setStrategy('forced_fallback')">
+                        🆘 Forced-Exit Fallback <span id="fallbackReadyDot" class="fallback-ready-dot hidden">●</span>
+                        <br><small>(ทางออกสำรอง ไม่ใช่เป้าหมาย)</small>
+                    </button>
+
                     <!-- ตัวเลือกรันกำไร 70% ฝั่งไหน (เฉพาะเมื่อเลือก skew_runner) -->
                     <div id="skewTargetRow" class="skew-target-selector">
                         <div class="skew-target-header">

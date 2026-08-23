@@ -4,6 +4,7 @@ let skewTarget70 = 'red'; // 'red' | 'blue' — ฝั่งที่ได้�
 let breakevenProfitTarget = 'red'; // 'red' | 'blue' — ฝั่งที่ได้รับกำไร (เฉพาะ breakeven selector ใหม่)
 let _isHedgeExecuting = false;
 let _hedgeExecutionTimer = null;
+let _priceUpdateCountSinceEntry = 0; // 🆕 grace period counter: นับครั้งที่ราคาถูกอัปเดตหลังวางตั๋วแรก
 
 const standardBoxingOdds = [
     { a: 10, b: 9, val: 10/9, label: "10:9" },
@@ -151,6 +152,7 @@ function syncFavAndDogInputs(source) {
 
 function onFavOrDogChange(source) {
     syncFavAndDogInputs(source || 'fav');
+    if (tickets.length > 0) _priceUpdateCountSinceEntry++; // 🆕 grace counter
     if (typeof calculateAll === 'function') calculateAll();
 }
 window.onFavOrDogChange = onFavOrDogChange;
@@ -239,6 +241,7 @@ function getTicketPnL(t) {
 }
 
 function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
+    if (tickets.length === 0) _priceUpdateCountSinceEntry = 0; // 🆕 reset ตอนวางตั๋วแรก
     const aa = parseFloat(a) || 2;
     const bb = parseFloat(b) || 1;
     const actualSide = side || deriveSideFromOdds(aa, bb);
@@ -253,6 +256,7 @@ function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
 
 function removeTicket(id) {
     tickets = tickets.filter(t => t.id !== id);
+    if (tickets.length === 0) _priceUpdateCountSinceEntry = 0; // 🆕 reset เมื่อลบตั๋วทั้งหมด
     renderTickets();
     calculateAll();
 }
@@ -346,11 +350,13 @@ function setStrategy(strat) {
     const btnSkew = document.getElementById('btnSkewRunner');
     const btnBreakeven = document.getElementById('btnBreakeven');
     const btnSmartCut = document.getElementById('btnSmartCut');
+    const btnFallback = document.getElementById('btnForcedFallback'); // 🆕
 
     if (btnEqual) btnEqual.classList.toggle('active', strat === 'equal');
     if (btnSkew) btnSkew.classList.toggle('active', strat === 'skew_runner');
     if (btnBreakeven) btnBreakeven.classList.toggle('active', strat === 'breakeven');
     if (btnSmartCut) btnSmartCut.classList.toggle('active', strat === 'smart_cut');
+    if (btnFallback) btnFallback.classList.toggle('active', strat === 'forced_fallback'); // 🆕
 
     // แสดง/ซ่อน selector เฉพาะกลยุทธ์ (จำค่าเดิมไว้ ไม่รีเซ็ต)
     const skewTargetRow = document.getElementById('skewTargetRow');
@@ -1349,6 +1355,9 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         btnBreakeven.classList.remove('ready-breakeven');
         btnSmartCut.classList.remove('ready-smart-cut');
         updateReadyCountBadge(0);
+        // 🆕 ซ่อน dot fallback ด้วยเมื่อ clear
+        const dotElClear = document.getElementById('fallbackReadyDot');
+        if (dotElClear) dotElClear.classList.add('hidden');
     };
 
     if (!leadingCorner || leadingProfit === laggingProfit || !targetRatio || targetRatio <= 0) {
@@ -1426,6 +1435,42 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         const readyHash = `${isSkewReady ? '1' : '0'}${isEqualReady ? '1' : '0'}${isBreakevenReady ? '1' : '0'}${isSmartCutReady ? '1' : '0'}`;
         if (typeof SoundEngine !== 'undefined') {
             SoundEngine.checkAndPlayStrategyReadyAlert(readyHash);
+        }
+
+        // 🆕 เก็บผล fallback ไว้ใช้แสดงผลตอนกดปุ่ม Forced-Exit Fallback
+        const recoveryPct = laggingProfit !== 0
+            ? ((resEqual.minProfit - laggingProfit) / Math.abs(laggingProfit)) * 100
+            : 0;
+
+        // คำนวณเงื่อนไข 3 ข้อสำหรับแนะนำ (ใช้ร่วมกันทั้ง dot และปุ่ม CTA)
+        const _fbMainNotReady = !(
+            (currentStrategy === 'skew_runner' && isSkewReady) ||
+            (currentStrategy === 'equal' && isEqualReady) ||
+            (currentStrategy === 'breakeven' && isBreakevenReady) ||
+            (currentStrategy === 'smart_cut' && isSmartCutReady)
+        );
+        const _fbGraceOk = _priceUpdateCountSinceEntry >= 4;
+        const _fbRecoveryOk = recoveryPct >= 80;
+        const _fbIsRecommended = _fbMainNotReady && _fbGraceOk && _fbRecoveryOk;
+
+        console.log(
+            '%c[ForcedFallback] grace=' + _priceUpdateCountSinceEntry + '/4 recovery=' + recoveryPct.toFixed(1) + '% mainNotReady=' + _fbMainNotReady + ' → recommended=' + _fbIsRecommended,
+            'color: ' + (_fbIsRecommended ? '#4ade80' : '#fb923c') + '; font-size: 0.85rem;'
+        );
+
+        window._lastFallbackPlan = {
+            hedgeStake: resEqual.hedgeStake,
+            finalRedProf: resEqual.finalRedProf,
+            finalBlueProf: resEqual.finalBlueProf,
+            minProfit: resEqual.minProfit,
+            recoveryPct,
+            isRecommended: _fbIsRecommended  // 🆕 ครบ 3 เงื่อนไขถึงจะ true
+        };
+
+        // 🆕 เช็คเงื่อนไขแนะนำ (highlight dot) — ครบ 3 ข้อ: หลักยังไม่ ready + grace >=4 + recovery >=80%
+        const dotEl = document.getElementById('fallbackReadyDot');
+        if (dotEl) {
+            dotEl.classList.toggle('hidden', !_fbIsRecommended);
         }
 
         // ——— ตรวจสอบ Auto-Hedge ที่นี่ ไม่ขึ้นกับว่าผู้ใช้อยู่แท็บไหน ———
@@ -1618,7 +1663,18 @@ function calculateActionAndAdvisor(netRed, netBlue) {
 
 
     let hedgeResult;
-    if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculateStrategyHedge) {
+    if (currentStrategy === 'forced_fallback') {
+        // 🆕 ใช้ค่าที่เก็บไว้จาก updateStrategyButtonsReadiness() ตรงๆ ไม่เรียก engine ซ้ำ
+        const plan = window._lastFallbackPlan || { hedgeStake: 0, finalRedProf: 0, finalBlueProf: 0, isReady: false, isRecommended: false };
+        hedgeResult = {
+            hedgeStake: plan.hedgeStake,
+            finalRedProf: plan.finalRedProf,
+            finalBlueProf: plan.finalBlueProf,
+            isReady: true,            // ทำให้ action card แสดงข้อมูลได้เสมอ
+            isFallback: true,         // 🆕 flag บอกว่านี่คือ fallback mode
+            isRecommended: !!plan.isRecommended  // 🆕 ครบ 3 เงื่อนไข → ปุ่มเขียว
+        };
+    } else if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculateStrategyHedge) {
         hedgeResult = PriceJourneyEngine.calculateStrategyHedge({
             strategy: currentStrategy,
             leadingCorner,
@@ -1666,8 +1722,22 @@ function calculateActionAndAdvisor(netRed, netBlue) {
         finalBlueProf
     };
 
+    // 🆕 อัปเดตหัว action card ตามกลยุทธ์ที่เลือก
+    const actionTitleEl = document.getElementById('actionTitleText');
+    if (actionTitleEl) {
+        actionTitleEl.textContent = currentStrategy === 'forced_fallback'
+            ? '🆘 Forced-Exit Fallback (อ้างอิง ไม่ใช่เป้าหมาย):'
+            : '👉 สถานะการออกตัว:';
+    }
+
     if (isReady) {
-        if (actionCard) actionCard.className = "action-card ready";
+        // --- สำหรับ forced_fallback: ลด color ของ actionCard ลงเป็น "ref" ไม่ใช่ "ready" เต็ม ---
+        if (currentStrategy === 'forced_fallback') {
+            if (actionCard) actionCard.className = 'action-card fallback-ref';
+        } else {
+            if (actionCard) actionCard.className = 'action-card ready';
+        }
+
         if (statusBadge) {
             let stratStatusText = '';
             if (currentStrategy === 'skew_runner') {
@@ -1680,19 +1750,23 @@ function calculateActionAndAdvisor(netRed, netBlue) {
                 stratStatusText = '🟡 ขอเท่าทุน (' + beSideLabel + ')';
             } else if (currentStrategy === 'smart_cut') {
                 stratStatusText = '🛡️ ยอมเสียน้อย (คัทลอส)';
+            } else if (currentStrategy === 'forced_fallback') {
+                const fbPlan = window._lastFallbackPlan;
+                const pct = fbPlan ? fbPlan.recoveryPct.toFixed(1) : '0.0';
+                stratStatusText = '🆘 ทางออกสำรอง (Recovery ' + pct + '%)';
             } else {
                 stratStatusText = '✅ เข้าเงื่อนไขออกตัว';
             }
             statusBadge.innerText = stratStatusText;
-            statusBadge.style.color = "var(--green)";
+            statusBadge.style.color = 'var(--green)';
         }
         const sideName = isHedgeByFav ? 'ต่อ' : 'รอง';
         if (actionSideEl) actionSideEl.innerText = '🔥 กดสวน [' + targetCornerText + '] (' + sideName + ' ' + targetOddA + ':' + targetOddB + ')';
         if (actionStakeEl) {
             actionStakeEl.innerText = 'แทง ' + recommendedStake.toLocaleString() + ' B';
-            actionStakeEl.className = "stake-badge ready";
-            actionStakeEl.style.cursor = "pointer";
-            actionStakeEl.title = "คลิกเพื่อนำยอดนี้ไปใส่ในช่องเดิมพัน";
+            actionStakeEl.className = 'stake-badge ready';
+            actionStakeEl.style.cursor = 'pointer';
+            actionStakeEl.title = 'คลิกเพื่อนำยอดนี้ไปใส่ในช่องเดิมพัน';
             actionStakeEl.onclick = () => {
                 const betInput = document.getElementById('qbBetAmount');
                 if (betInput) {
@@ -1703,34 +1777,51 @@ function calculateActionAndAdvisor(netRed, netBlue) {
         }
 
         if (btnOneClickHedge) {
-            btnOneClickHedge.disabled = false;
-            btnOneClickHedge.className = 'btn-one-click-hedge ready pulse-ready';
-            let stratLabel;
-            if (currentStrategy === 'skew_runner') {
-                const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : (skewTarget70 === 'blue' ? '🔵 น้ำเงิน' : '');
-                stratLabel = 'รันกำไร 70/30' + (skewSideLabel ? ' (' + skewSideLabel + ')' : '');
-            } else if (currentStrategy === 'breakeven') {
-                const beSideLabel = breakevenProfitTarget === 'red' ? '🔴 แดงได้กำไร' : '🔵 น้ำเงินได้กำไร';
-                stratLabel = 'ขอเท่าทุน (' + beSideLabel + ')';
-            } else if (currentStrategy === 'smart_cut') {
-                stratLabel = 'คุมขาดทุน';
+            // 🆕 forced_fallback: ปุ่มเขียวต่อเมื่อ isRecommended (ครบ 3 เงื่อนไข) เท่านั้น
+            const isFallbackRecommended = hedgeResult.isFallback && hedgeResult.isRecommended;
+            const isNormalReady = !hedgeResult.isFallback;
+
+            if (isNormalReady || isFallbackRecommended) {
+                // ✅ เขียว: กลยุทธ์ปกติ ready หรือ fallback ครบทุกเงื่อนไข
+                btnOneClickHedge.disabled = false;
+                btnOneClickHedge.className = 'btn-one-click-hedge ready pulse-ready';
+                let stratLabel;
+                if (currentStrategy === 'skew_runner') {
+                    const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : (skewTarget70 === 'blue' ? '🔵 น้ำเงิน' : '');
+                    stratLabel = 'รันกำไร 70/30' + (skewSideLabel ? ' (' + skewSideLabel + ')' : '');
+                } else if (currentStrategy === 'breakeven') {
+                    const beSideLabel = breakevenProfitTarget === 'red' ? '🔴 แดงได้กำไร' : '🔵 น้ำเงินได้กำไร';
+                    stratLabel = 'ขอเท่าทุน (' + beSideLabel + ')';
+                } else if (currentStrategy === 'smart_cut') {
+                    stratLabel = 'คุมขาดทุน';
+                } else if (currentStrategy === 'forced_fallback') {
+                    stratLabel = 'ออกทางสำรอง (Forced-Exit)';
+                } else {
+                    stratLabel = 'ล็อคกำไร';
+                }
+                btnOneClickHedge.innerHTML = '<span>⚡ กด' + stratLabel + 'ทันที [' + targetCornerText + ' ' + recommendedStake.toLocaleString() + ' B]</span>';
             } else {
-                stratLabel = 'ล็อคกำไร';
+                // ⚠️ ส้มอ่อน: fallback ยังไม่ครบเงื่อนไข — กดได้แต่ไม่แนะนำ
+                btnOneClickHedge.disabled = false;
+                btnOneClickHedge.className = 'btn-one-click-hedge fallback-not-ready';
+                const fbPlan = window._lastFallbackPlan;
+                const pct = fbPlan ? fbPlan.recoveryPct.toFixed(1) : '0.0';
+                const grace = _priceUpdateCountSinceEntry;
+                btnOneClickHedge.innerHTML = '<span>⚠️ ยังไม่แนะนำ — Recovery ' + pct + '% (grace ' + grace + '/4 ครั้ง) [' + targetCornerText + ' ' + recommendedStake.toLocaleString() + ' B]</span>';
             }
-            btnOneClickHedge.innerHTML = '<span>⚡ กด' + stratLabel + 'ทันที [' + targetCornerText + ' ' + recommendedStake.toLocaleString() + ' B]</span>';
         }
 
     } else {
 
-        if (actionCard) actionCard.className = "action-card wait";
+        if (actionCard) actionCard.className = 'action-card wait';
         if (statusBadge) {
-            statusBadge.innerText = "⏳ ยังไม่อยู่ในจุดออกตัว";
-            statusBadge.style.color = "var(--red-side)";
+            statusBadge.innerText = '⏳ ยังไม่อยู่ในจุดออกตัว';
+            statusBadge.style.color = 'var(--red-side)';
         }
         if (actionSideEl) actionSideEl.innerText = '⚠️ ควรรอราคา! (ถ้ารีบออกตอนนี้จะเสียเปรียบ)';
         if (actionStakeEl) {
             actionStakeEl.innerText = 'อย่าเพิ่งกด';
-            actionStakeEl.className = "stake-badge wait";
+            actionStakeEl.className = 'stake-badge wait';
             actionStakeEl.onclick = null;
         }
 
