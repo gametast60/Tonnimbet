@@ -780,6 +780,9 @@
 
         // อัปเดตราคาเข้าสู่ระบบและคำนวณกำไร/ขาดทุนโดยคงแผล (tickets) ของผู้ใช้ไว้ไม่ให้หาย
         _applyPriceToUIFromPoint(point, false);
+        if (typeof countPriceUpdateIfGenuinelyChanged === 'function') {
+            countPriceUpdateIfGenuinelyChanged();  // 🆕 นับ grace ตอน replay/jump ราคาจาก Backtest Hub ด้วย
+        }
         if (typeof calculateAll === 'function') calculateAll();
 
         _player.stepIndex = i;
