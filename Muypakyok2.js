@@ -1145,7 +1145,7 @@ function renderTargetPriceList(leadingCorner, leadingProfit, laggingProfit, isHe
 
 
 // ==========================================
-// ระบบ Auto Confirm ออร์เดอร์อัตโนมัติ (ดัก Confirm Dialog → delay 1 วิ → auto-click)
+// ระบบ Auto Confirm ออร์เดอร์อัตโนมัติ (ดัก Confirm Dialog → delay 0.5 วิ → auto-click)
 // ==========================================
 let autoConfirm = {
     enabled: false,
@@ -1265,7 +1265,7 @@ function _installConfirmDialogObserver() {
                     if (autoConfirm._processedConfirmKeys.size > 200) {
                         autoConfirm._processedConfirmKeys = new Set(Array.from(autoConfirm._processedConfirmKeys).slice(-100));
                     }
-                    console.log('%c🔔 [AUTO-CONFIRM] พบ Confirm Dialog → หน่วง 1 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
+                    console.log('%c🔔 [AUTO-CONFIRM] พบ Confirm Dialog → หน่วง 0.5 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
                     setTimeout(() => {
                         const freshBtns = _tryLocateConfirmButtons();
                         const btnToClick = freshBtns[freshBtns.length - 1] || targetBtn;
@@ -1276,7 +1276,7 @@ function _installConfirmDialogObserver() {
                             }
                             if (typeof SoundEngine !== 'undefined') SoundEngine.playOrderExecuted();
                         }
-                    }, 1000);
+                    }, 500);
                     return;
                 }
             }
@@ -1503,13 +1503,15 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
             _entryTargetRatio = targetRatio;
         }
 
-        // คำนวณเงื่อนไข 4 ข้อสำหรับแนะนำ (ใช้ร่วมกันทั้ง dot และปุ่ม CTA)
-        const _fbMainNotReady = !(
-            (currentStrategy === 'skew_runner' && isSkewReady) ||
-            (currentStrategy === 'equal' && isEqualReady) ||
-            (currentStrategy === 'breakeven' && isBreakevenReady) ||
-            (currentStrategy === 'smart_cut' && isSmartCutReady)
-        );
+        // 🆕 เช็คว่า "มีกลยุทธ์กำไรตัวไหน ready บ้างไหม" ไม่ผูกกับ currentStrategy ที่แค่กำลังดูอยู่
+        // (เดิมกดดูปุ่มไหนก็เปลี่ยน currentStrategy ทำให้ไซเรนดับผิดจังหวะ)
+        //
+        // จงใจไม่รวม isSmartCutReady เพราะ "ยอมเสียน้อย" คือสัญญาณ "ควรตัดขาดทุน" 
+        // เหมือนกับ Forced-Exit Fallback เอง — ถ้า smart_cut ready แต่ผู้ใช้ไม่ทันสังเกต 
+        // ไซเรนควรกระพริบต่อเพื่อย้ำเตือนซ้ำ ไม่ใช่ดับไปเฉยๆ ต่างจาก 3 กลยุทธ์กำไร 
+        // (70/30 / ขอเท่าทุน / กำไรเท่ากัน) ที่ถ้า ready แปลว่าได้กำไรตามแผนแล้ว ไม่ต้องเตือนซ้ำ
+        const _fbAnyProfitStrategyReady = isSkewReady || isEqualReady || isBreakevenReady;
+        const _fbMainNotReady = !_fbAnyProfitStrategyReady;
         const _fbGraceOk = _priceUpdateCountSinceEntry >= 4;
         const _fbRecoveryOk = recoveryPct >= 80;
         const _diffPrice = (_entryTargetRatio !== null) ? Math.abs(targetRatio - _entryTargetRatio) : 0;
