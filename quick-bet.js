@@ -329,7 +329,7 @@ function qbShowConfirmModal(data) {
 
     // ==========================================
     // Auto Confirm Logic (ถ้าเปิด Auto Confirm ไว้)
-    // delay 0.5 วินาที แล้ว auto-click ปุ่ม Confirm
+    // delay 1 วินาที แล้ว auto-click ปุ่ม Confirm
     // ==========================================
     if (typeof autoConfirm !== 'undefined' && autoConfirm.enabled) {
         // Build key เพื่อป้องกัน double-click กรณี qbShowConfirmModal ถูกเรียกซ้ำ
@@ -339,7 +339,7 @@ function qbShowConfirmModal(data) {
             if (autoConfirm._processedConfirmKeys.size > 200) {
                 autoConfirm._processedConfirmKeys = new Set(Array.from(autoConfirm._processedConfirmKeys).slice(-100));
             }
-            console.log('%c🔔 [AUTO-CONFIRM] พบ Internal Confirm Dialog → หน่วง 0.5 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
+            console.log('%c🔔 [AUTO-CONFIRM] พบ Internal Confirm Dialog → หน่วง 1 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
             setTimeout(() => {
                 const btnSubmit = document.getElementById('btnConfirmBetSubmit');
                 if (btnSubmit && document.body.contains(btnSubmit) && _isConfirmModalOpen) {
@@ -351,7 +351,7 @@ function qbShowConfirmModal(data) {
                         if (typeof qbSubmitConfirmBet === 'function') qbSubmitConfirmBet();
                     }
                 }
-            }, 500);
+            }, 1000);
         }
     }
 }

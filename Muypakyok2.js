@@ -986,7 +986,7 @@ function renderTargetPriceList(leadingCorner, leadingProfit, laggingProfit, isHe
 
 
 // ==========================================
-// ระบบ Auto Confirm ออร์เดอร์อัตโนมัติ (ดัก Confirm Dialog → delay 0.5 วิ → auto-click)
+// ระบบ Auto Confirm ออร์เดอร์อัตโนมัติ (ดัก Confirm Dialog → delay 1 วิ → auto-click)
 // ==========================================
 let autoConfirm = {
     enabled: false,
@@ -1106,7 +1106,7 @@ function _installConfirmDialogObserver() {
                     if (autoConfirm._processedConfirmKeys.size > 200) {
                         autoConfirm._processedConfirmKeys = new Set(Array.from(autoConfirm._processedConfirmKeys).slice(-100));
                     }
-                    console.log('%c🔔 [AUTO-CONFIRM] พบ Confirm Dialog → หน่วง 0.5 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
+                    console.log('%c🔔 [AUTO-CONFIRM] พบ Confirm Dialog → หน่วง 1 วินาทีก่อนกดยืนยัน', 'color: #0ea5e9; font-weight: bold;');
                     setTimeout(() => {
                         const freshBtns = _tryLocateConfirmButtons();
                         const btnToClick = freshBtns[freshBtns.length - 1] || targetBtn;
@@ -1117,7 +1117,7 @@ function _installConfirmDialogObserver() {
                             }
                             if (typeof SoundEngine !== 'undefined') SoundEngine.playOrderExecuted();
                         }
-                    }, 500);
+                    }, 1000);
                     return;
                 }
             }
