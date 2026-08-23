@@ -152,36 +152,34 @@ function syncFavAndDogInputs(source) {
     }
 }
 
+function countPriceUpdateIfGenuinelyChanged() {
+    if (tickets.length === 0) return;
+    const curFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
+    const curFavA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
+    const curFavB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
+    const curDogCorner = (document.getElementById('liveDogCorner') || {}).value || '';
+    const curDogA = parseFloat((document.getElementById('dogOddA') || {}).value) || 0;
+    const curDogB = parseFloat((document.getElementById('dogOddB') || {}).value) || 0;
+
+    const isChanged = (curFavCorner !== _lastCountedOdds.favCorner) ||
+                      (curFavA !== _lastCountedOdds.favA) ||
+                      (curFavB !== _lastCountedOdds.favB) ||
+                      (curDogCorner !== _lastCountedOdds.dogCorner) ||
+                      (curDogA !== _lastCountedOdds.dogA) ||
+                      (curDogB !== _lastCountedOdds.dogB);
+
+    if (isChanged && ((curFavA > 0 && curFavB > 0) || (curDogA > 0 && curDogB > 0))) {
+        _priceUpdateCountSinceEntry++;
+        _lastCountedOdds = { favCorner: curFavCorner, favA: curFavA, favB: curFavB,
+                              dogCorner: curDogCorner, dogA: curDogA, dogB: curDogB };
+        console.log(`%c[PriceUpdate] count = ${_priceUpdateCountSinceEntry} (${curFavCorner} ${curFavA}:${curFavB} / ${curDogCorner} ${curDogA}:${curDogB})`, 'color:#38bdf8;font-weight:bold;');
+    }
+}
+window.countPriceUpdateIfGenuinelyChanged = countPriceUpdateIfGenuinelyChanged;
+
 function onFavOrDogChange(source) {
     syncFavAndDogInputs(source || 'fav');
-    if (tickets.length > 0) {
-        const curFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
-        const curFavA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
-        const curFavB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
-        const curDogCorner = (document.getElementById('liveDogCorner') || {}).value || '';
-        const curDogA = parseFloat((document.getElementById('dogOddA') || {}).value) || 0;
-        const curDogB = parseFloat((document.getElementById('dogOddB') || {}).value) || 0;
-
-        const isChanged = (curFavCorner !== _lastCountedOdds.favCorner) ||
-                          (curFavA !== _lastCountedOdds.favA) ||
-                          (curFavB !== _lastCountedOdds.favB) ||
-                          (curDogCorner !== _lastCountedOdds.dogCorner) ||
-                          (curDogA !== _lastCountedOdds.dogA) ||
-                          (curDogB !== _lastCountedOdds.dogB);
-
-        if (isChanged && ((curFavA > 0 && curFavB > 0) || (curDogA > 0 && curDogB > 0))) {
-            _priceUpdateCountSinceEntry++;
-            _lastCountedOdds = {
-                favCorner: curFavCorner,
-                favA: curFavA,
-                favB: curFavB,
-                dogCorner: curDogCorner,
-                dogA: curDogA,
-                dogB: curDogB
-            };
-            console.log(`%c[PriceUpdate] Genuinely changed -> count = ${_priceUpdateCountSinceEntry} (${curFavCorner} ${curFavA}:${curFavB} / ${curDogCorner} ${curDogA}:${curDogB})`, 'color: #38bdf8; font-weight: bold;');
-        }
-    }
+    countPriceUpdateIfGenuinelyChanged();  // 🆕 ใช้ฟังก์ชันกลาง
     if (typeof calculateAll === 'function') calculateAll();
 }
 window.onFavOrDogChange = onFavOrDogChange;
@@ -2257,6 +2255,7 @@ muayChannel.onmessage = function(event) {
         if (dogOddB) dogOddB.value = '';
     }
 
+    countPriceUpdateIfGenuinelyChanged();  // 🆕 บันทึกและนับ price update เมื่อราคาเปลี่ยนจาก BroadcastChannel
     if (typeof calculateAll === 'function') {
         calculateAll();
     }
@@ -2345,6 +2344,7 @@ function startSimulation(count = 0, intervalSec = 20) {
             SoundEngine.playGoldenBell();
         }
 
+        countPriceUpdateIfGenuinelyChanged(); // 🆕 นับ price update ใน simulation ด้วย
         calculateAll();
 
 
@@ -2400,7 +2400,8 @@ function stopSimulation() {
         'tickets', 'currentStrategy', 'skewTarget70', 'breakevenProfitTarget',
         '_simTimer', '_simCount', '_simMaxCount', '_simIntervalSec', '_isSimPaused',
         'isAutoSyncEnabled', 'currentPrice', 'previousPrice', 'standardBoxingOdds',
-        '_isHedgeExecuting', '_hedgeExecutionTimer'
+        '_isHedgeExecuting', '_hedgeExecutionTimer',
+        '_priceUpdateCountSinceEntry', '_lastCountedOdds', '_entryTargetRatio'
     ];
     varsToExpose.forEach(function (name) {
         try {
