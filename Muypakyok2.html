@@ -427,6 +427,26 @@
                             </select>
                         </div>
                     </div>
+                    <!-- ตัวเลือกกำไรขั้นต่ำสำหรับ Auto-Fire (เฉพาะเมื่อเลือก equal) -->
+                    <div id="equalMinProfitFloorRow" class="hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-size: 0.76rem; color: #a7f3d0; font-weight: 600;">🟢 ยิงเฉพาะเมื่อกำไรขั้นต่ำ:</label>
+                            <div class="hedge-toggle" style="padding: 2px;">
+                                <button type="button" id="minProfitFloorModeBaht" class="btn-hedge active" onclick="setMinProfitFloorMode('amount')" style="padding: 2px 8px; font-size: 0.68rem;" title="ระบุจำนวนเงินกำไรขั้นต่ำเป็นบาท">บาท/ฝั่ง</button>
+                                <button type="button" id="minProfitFloorModePercent" class="btn-hedge" onclick="setMinProfitFloorMode('percent')" style="padding: 2px 8px; font-size: 0.68rem;" title="ระบุจำนวนเงินกำไรขั้นต่ำเป็นเปอร์เซ็นต์ของทุน">% ของทุน</button>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-weight: 700; color: #34d399; font-size: 0.9rem;">≥</span>
+                            <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                                <input type="number" id="minProfitFloorValue" min="0" step="1" placeholder="0" value="0" oninput="onMinProfitFloorValueChange()" style="background: rgba(15, 23, 42, 0.95); font-weight: 600; width: 100%; padding: 5px 35px 5px 8px; font-size: 0.78rem; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; color: #fff;">
+                                <span id="minProfitFloorUnitSuffix" style="position: absolute; right: 8px; font-size: 0.72rem; color: var(--text-muted); pointer-events: none;">บาท</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">
+                            ค่าเริ่มต้น 0 = พฤติกรรมเดิม (ยิงทันทีที่ทั้งสองฝั่ง ≥ 0 บาท)
+                        </div>
+                    </div>
                     <div id="autoOrderStatusBox" class="auto-status-box idle" style="margin-top: 8px;">
                         <span>สถานะ: <strong id="autoOrderStatusText">ปิดระบบอยู่ (เลือกกลยุทธ์แล้วกดเปิด AUTO)</strong></span>
                     </div>

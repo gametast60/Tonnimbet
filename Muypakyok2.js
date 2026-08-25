@@ -1143,7 +1143,9 @@ if (typeof window !== 'undefined') {
 let autoLimitOrder = {
     enabled: false,
     targetStrategy: 'skew_runner', // 'skew_runner' | 'equal' | 'breakeven' | 'smart_cut'
-    targetLabel: 'รันกำไร 70/30'
+    targetLabel: 'รันกำไร 70/30',
+    minProfitFloorMode: 'amount',   // 'amount' | 'percent'
+    minProfitFloorValue: 0
 };
 
 const strategyLabelMap = {
@@ -1152,6 +1154,37 @@ const strategyLabelMap = {
     breakeven:   '🟡 ขอเท่าทุน',
     smart_cut:   '🛡️ ยอมเสียน้อย'
 };
+
+function setMinProfitFloorMode(mode) {
+    autoLimitOrder.minProfitFloorMode = mode === 'percent' ? 'percent' : 'amount';
+    const btnBaht = document.getElementById('minProfitFloorModeBaht');
+    const btnPct = document.getElementById('minProfitFloorModePercent');
+    const suffix = document.getElementById('minProfitFloorUnitSuffix');
+
+    if (btnBaht) btnBaht.classList.toggle('active', autoLimitOrder.minProfitFloorMode === 'amount');
+    if (btnPct) btnPct.classList.toggle('active', autoLimitOrder.minProfitFloorMode === 'percent');
+    if (suffix) suffix.textContent = autoLimitOrder.minProfitFloorMode === 'percent' ? '%' : 'บาท';
+
+    if (typeof calculateAll === 'function') {
+        calculateAll();
+    }
+}
+
+function onMinProfitFloorValueChange() {
+    const input = document.getElementById('minProfitFloorValue');
+    const val = input ? parseFloat(input.value) : 0;
+    autoLimitOrder.minProfitFloorValue = (isNaN(val) || val < 0) ? 0 : val;
+
+    if (typeof calculateAll === 'function') {
+        calculateAll();
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.autoLimitOrder = autoLimitOrder;
+    window.setMinProfitFloorMode = setMinProfitFloorMode;
+    window.onMinProfitFloorValueChange = onMinProfitFloorValueChange;
+}
 
 function setAutoLimitOrder(val) {
     autoLimitOrder.enabled = !!val;
@@ -1187,6 +1220,12 @@ function onAutoTargetSelectChange() {
     const val = select.value;
     autoLimitOrder.targetStrategy = val;
     autoLimitOrder.targetLabel = strategyLabelMap[val] || val;
+
+    const floorRow = document.getElementById('equalMinProfitFloorRow');
+    if (floorRow) {
+        floorRow.classList.toggle('hidden', val !== 'equal');
+    }
+
     if (autoLimitOrder.enabled) {
         const txt = document.getElementById('autoOrderStatusText');
         if (txt) txt.innerHTML = `🟢 กำลังดักยิงอัตโนมัติเมื่อ [${autoLimitOrder.targetLabel}] เข้าเงื่อนไข`;
@@ -1401,10 +1440,36 @@ function checkAndFireAutoHedge(leadingCorner, isHedgeByFav, targetRatio) {
     if (!readiness) return;
 
     const targetStrat = autoLimitOrder.targetStrategy;
-    if (!readiness[targetStrat]) return;  // กลยุทธ์เป้าหมายยังไม่พร้อม
+    if (!readiness[targetStrat]) {
+        const txt = document.getElementById('autoOrderStatusText');
+        if (txt && autoLimitOrder.enabled && txt.innerHTML.includes('ยังไม่ถึงกำไรขั้นต่ำ')) {
+            txt.innerHTML = `🟢 กำลังดักยิงอัตโนมัติเมื่อ [${autoLimitOrder.targetLabel}] เข้าเงื่อนไข`;
+        }
+        return;  // กลยุทธ์เป้าหมายยังไม่พร้อม
+    }
 
     const targetResult = readiness._results[targetStrat];
     if (!targetResult || !targetResult.hedgeStake || targetResult.hedgeStake <= 0) return;
+
+    // 🆕 Minimum Profit Floor guard — เฉพาะ equal strategy เท่านั้น
+    if (targetStrat === 'equal') {
+        const floorMode = autoLimitOrder.minProfitFloorMode || 'amount';
+        const floorRaw = parseFloat(autoLimitOrder.minProfitFloorValue) || 0;
+        let floorBaht = floorRaw;
+        if (floorMode === 'percent') {
+            const totalCapital = parseFloat((document.getElementById('totalCapital') || {}).value) || 0;
+            floorBaht = totalCapital * (floorRaw / 100);
+        }
+        const worstSideProfit = Math.min(targetResult.finalRedProf, targetResult.finalBlueProf);
+        if (worstSideProfit < floorBaht) {
+            // ยัง "ready" ตามนิยามเดิม แต่ยังไม่ถึงกำไรขั้นต่ำที่ผู้ใช้ตั้งไว้ -> ยังไม่ยิง
+            const txt = document.getElementById('autoOrderStatusText');
+            if (txt && autoLimitOrder.enabled) {
+                txt.innerHTML = `🟡 [${autoLimitOrder.targetLabel}] เข้าเป้าแล้วแต่ยังไม่ถึงกำไรขั้นต่ำที่ตั้งไว้ (ปัจจุบัน ${Math.round(worstSideProfit).toLocaleString()} B / ต้องการ ≥ ${Math.round(floorBaht).toLocaleString()} B)`;
+            }
+            return;
+        }
+    }
 
     const recommendedStake = Math.max(0, Math.round(targetResult.hedgeStake));
     if (recommendedStake <= 0) return;
