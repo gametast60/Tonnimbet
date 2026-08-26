@@ -57,12 +57,136 @@
     <div class="main-layout">
 
         <!-- ============================================== -->
-        <!-- คอลัมน์ 1 (ซ้าย): History Bet & Matchs Strategy -->
+        <!-- คอลัมน์ 1 (ซ้าย): Fight Data Studio & History Bet -->
         <!-- ============================================== -->
         <div class="layout-col col-left">
-            
-            <!-- การ์ด 1.1: History Bet / คลังเงินทุน & ประวัติการกด -->
-            <div class="glossy-panel">
+
+            <!-- การ์ด 1.1: 📝 Fight Data Studio (Fight Data Recorder + Backtest Hub) -->
+            <div class="glossy-panel studio-panel">
+                <div class="glossy-header" onclick="toggleStudioBody()" style="cursor:pointer;" title="คลิกเพื่อย่อ/ขยาย Fight Data Studio">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span>📝 Fight Data Studio</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span id="recorderStatusBadge" style="font-size: 0.75rem; opacity: 0.9;">⚪ Idle</span>
+                        <span id="studioCollapseIcon" style="color:#38bdf8; font-size:0.75rem; font-weight:700;">▼ ขยาย</span>
+                    </div>
+                </div>
+                <div class="panel-body" id="studioPanelBody" style="display:none;">
+                    <!-- Segmented mode toggle -->
+                    <div class="studio-mode-toggle">
+                        <button type="button" class="studio-mode-btn record active" id="studioModeRecordBtn" onclick="setStudioMode('record')">🔴 บันทึกสด</button>
+                        <button type="button" class="studio-mode-btn backtest" id="studioModeBacktestBtn" onclick="setStudioMode('backtest')">🧪 ทดสอบย้อนหลัง</button>
+                    </div>
+
+                    <!-- โหมดบันทึกสด -->
+                    <div id="studioRecordPanel" class="bt-mode-panel">
+                        <div class="recorder-btn-row">
+                            <button class="btn-recorder start" onclick="recorderStartFight()">▶️ เริ่มบันทึกไฟท์ใหม่</button>
+                            <button class="btn-recorder end-red" onclick="recorderEndFight('red')" disabled>⏺️ จบ + 🔴แดงชนะ</button>
+                            <button class="btn-recorder end-blue" onclick="recorderEndFight('blue')" disabled>⏺️ จบ + 🔵น้ำเงินชนะ</button>
+                            <button class="btn-recorder cancel" onclick="recorderCancelFight()" disabled id="recCancelBtn">🗑️ ยกเลิก/ล้างการบันทึก</button>
+                        </div>
+
+                        <div id="recorderActiveBox" class="recorder-active-box hidden">
+                            <div class="recorder-active-title">🔥 สถานะการบันทึกปัจจุบัน:</div>
+                            <div class="recorder-active-row"><span>เปิดราคา:</span><b id="recFirstPrice">-</b><small id="recFirstTs"></small></div>
+                            <div class="recorder-active-row"><span>ราคาล่าสุด:</span><b id="recLastPrice">-</b><small id="recLastTs"></small></div>
+                            <div class="recorder-active-row"><span>จำนวนจุดที่เก็บ:</span><b id="recCountVal" class="text-green">0 จุด</b><small id="recElapsed"></small></div>
+                            <div id="recorderRecentList" class="recorder-recent-list"></div>
+                        </div>
+
+                        <div class="recorder-library-title">
+                            <span>📚 คลังไฟท์ที่บันทึกไว้:</span>
+                            <b id="recLibraryCount">0 ไฟท์</b>
+                        </div>
+                        <div id="recorderLibraryList" class="recorder-library-list">
+                            <div class="recorder-empty">ยังไม่มีไฟท์ที่บันทึก — กด "เริ่มบันทึก" แล้วป้อนราคาจริงหรือเปิดดึงราคาจากเว็บ</div>
+                        </div>
+                        <button class="btn-add danger" onclick="recorderClearLibrary()" style="margin-top: 8px; width: 100%;" id="recClearLibraryBtn" disabled>🗑️ เคลียร์ทั้งหมด</button>
+                    </div>
+
+                    <!-- โหมดทดสอบย้อนหลัง -->
+                    <div id="studioBacktestPanel" class="bt-mode-panel hidden">
+                        <!-- Scenario Library Section (Collapsible & Searchable) -->
+                        <div class="studio-scenario-section">
+                            <div class="studio-section-header" onclick="toggleScenarioLibraryBody()">
+                                <span>📚 คลัง Scenario จาก data.js</span>
+                                <span class="studio-sub-collapse-icon" id="scenarioLibCollapseIcon">▼ ขยาย</span>
+                            </div>
+                            <div id="scenarioLibraryBody" class="hidden">
+                                <div class="studio-lib-search-row">
+                                    <input type="text" id="btHistSearchInput" class="studio-lib-search"
+                                           placeholder="🔍 ค้นหาชื่อนักมวย หรือ Fight ID..."
+                                           oninput="btHistRenderScenarioList()">
+                                    <span class="studio-lib-count" id="btHistLibCount">0 ไฟท์</span>
+                                </div>
+                                <div id="btHistScenarioList" class="studio-lib-list"></div>
+                            </div>
+                        </div>
+
+                        <div id="btHistInfoBox" class="bt-info-box">
+                            <div class="bt-info-row"><span>นักมวย:</span><b id="btHistFighters">-</b></div>
+                            <div class="bt-info-row"><span>🏆 แชมป์จริง:</span><b id="btHistWinner">-</b></div>
+                            <div class="bt-info-row"><span>จุดราคา:</span><b id="btHistStepInfo">-</b></div>
+                            <div class="bt-info-row"><span>เวลาสุดท้าย:</span><small id="btHistTimeInfo">-</small></div>
+                        </div>
+
+                        <div class="bt-hist-control-bar">
+                            <button class="btn-bt first" onclick="btHistJump(0)" id="btHistFirstBtn">⏮️⏮️ 🔄 เริ่มใหม่</button>
+                            <button class="btn-bt prev" onclick="btHistStep(-1)" id="btHistPrevBtn" disabled>⏮️ 📍 กลับ</button>
+                            <button class="btn-bt next" onclick="btHistStep(+1)" id="btHistNextBtn">⏭️ ราคาต่อไป</button>
+                            <button class="btn-bt last" onclick="btHistJumpToEnd()" id="btHistLastBtn">⏭️⏭️ 🏆 แสดงผลชนะ</button>
+                        </div>
+
+                        <div class="bt-hist-autostep-row">
+                            <div id="btHistAutoToggle" class="auto-confirm-toggle">
+                                <button class="btn-confirm off active" onclick="btHistSetAuto(false)" id="btHistAutoOffBtn">⏩ Auto-step OFF</button>
+                                <button class="btn-confirm on" onclick="btHistSetAuto(true)" id="btHistAutoOnBtn">⏩ Auto-step ON</button>
+                            </div>
+                            <div class="bt-hist-speed-wrap">
+                                <label for="btHistAutoSpeed">ความเร็ว:</label>
+                                <input type="number" id="btHistAutoSpeed" min="0.1" step="0.1" value="10">
+                                <small>วินาที/จุด</small>
+                            </div>
+                        </div>
+
+                        <div class="bt-timeline-wrap">
+                            <label>Timeline ราคา (คลิกเพื่อ jump):</label>
+                            <div id="btHistTimeline" class="bt-timeline">
+                                <small class="bt-timeline-empty">ยังไม่ได้โหลด Scenario</small>
+                            </div>
+                        </div>
+
+                        <div class="bt-hist-scenariobar">
+                            <button class="btn-bt scenario" onclick="btHistPrevScenario()" id="btHistPrevScnBtn">⬅️ ก่อนหน้า</button>
+                            <button class="btn-bt scenario" onclick="btHistRandomScenario()">🎲 สุ่มจากคลัง</button>
+                            <button class="btn-bt scenario" onclick="btHistNextScenario()" id="btHistNextScnBtn">ถัดไป ➡️</button>
+                        </div>
+
+                        <!-- 📊 Aggregate Report (ทั้งโหมด backtest) -->
+                        <div class="bt-aggregate-wrap">
+                            <div class="bt-aggregate-title">📊 สรุปผล Scenario ที่ผ่านมา: <b id="btAggCount">0</b> ครั้ง</div>
+                            <div class="bt-aggregate-grid">
+                                <div><span>🏆 Win Rate:</span><b id="btAggWinRate">-</b></div>
+                                <div><span>💰 PnL รวม:</span><b id="btAggTotalPnL">-</b></div>
+                                <div><span>📈 เฉลี่ย/ไฟท์:</span><b id="btAggAvg">-</b></div>
+                                <div><span>📉 Max DD:</span><b id="btAggDD">-</b></div>
+                                <div><span>⚖️ Profit Factor:</span><b id="btAggPF">-</b></div>
+                                <div><span>🧾 Hedge Hit:</span><b id="btAggHedge">-</b></div>
+                            </div>
+                            <div class="bt-btn-row">
+                                <button class="btn-bt report" onclick="btAggExportMd()">📄 ดูรายละเอียด (.md)</button>
+                                <button class="btn-bt report" onclick="btAggExportCsv()">📊 ส่งออก CSV</button>
+                                <button class="btn-bt stop" onclick="btAggReset()">🗑️ ล้างประวัติ</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- การ์ด 1.2: History Bet / คลังเงินทุน & ประวัติการกด -->
+            <div class="glossy-panel history-panel">
                 <div class="glossy-header">
                     <span>📜 History Bet</span>
                     <span style="font-size: 0.75rem; opacity: 0.9;" id="ticketCount">0 แผล</span>
@@ -101,44 +225,6 @@
 
                     <!-- รายการการ์ดแผลที่กด (Scroll ได้) -->
                     <div id="ticketContainer" class="ticket-container"></div>
-                </div>
-            </div>
-
-            <!-- การ์ด 1.2: 📝 Fight Data Recorder -->
-            <div class="glossy-panel recorder-panel">
-                <div class="glossy-header" onclick="toggleRecorderPanelBody()" style="cursor:pointer;" title="คลิกเพื่อย่อ/ขยายเครื่องมือบันทึกไฟท์">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span>📝 Fight Data Recorder</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span id="recorderStatusBadge" style="font-size: 0.75rem; opacity: 0.9;">⚪ Idle</span>
-                        <span id="recorderCollapseIcon" style="color:#38bdf8; font-size:0.75rem; font-weight:700;">▼ ขยาย</span>
-                    </div>
-                </div>
-                <div class="panel-body" id="recorderPanelBody" style="display:none;">
-                    <div class="recorder-btn-row">
-                        <button class="btn-recorder start" onclick="recorderStartFight()">▶️ เริ่มบันทึกไฟท์ใหม่</button>
-                        <button class="btn-recorder end-red" onclick="recorderEndFight('red')" disabled>⏺️ จบ + 🔴แดงชนะ</button>
-                        <button class="btn-recorder end-blue" onclick="recorderEndFight('blue')" disabled>⏺️ จบ + 🔵น้ำเงินชนะ</button>
-                        <button class="btn-recorder cancel" onclick="recorderCancelFight()" disabled id="recCancelBtn">🗑️ ยกเลิก/ล้างการบันทึก</button>
-                    </div>
-
-                    <div id="recorderActiveBox" class="recorder-active-box hidden">
-                        <div class="recorder-active-title">🔥 สถานะการบันทึกปัจจุบัน:</div>
-                        <div class="recorder-active-row"><span>เปิดราคา:</span><b id="recFirstPrice">-</b><small id="recFirstTs"></small></div>
-                        <div class="recorder-active-row"><span>ราคาล่าสุด:</span><b id="recLastPrice">-</b><small id="recLastTs"></small></div>
-                        <div class="recorder-active-row"><span>จำนวนจุดที่เก็บ:</span><b id="recCountVal" class="text-green">0 จุด</b><small id="recElapsed"></small></div>
-                        <div id="recorderRecentList" class="recorder-recent-list"></div>
-                    </div>
-
-                    <div class="recorder-library-title">
-                        <span>📚 คลังไฟท์ที่บันทึกไว้:</span>
-                        <b id="recLibraryCount">0 ไฟท์</b>
-                    </div>
-                    <div id="recorderLibraryList" class="recorder-library-list">
-                        <div class="recorder-empty">ยังไม่มีไฟท์ที่บันทึก — กด "เริ่มบันทึก" แล้วป้อนราคาจริงหรือเปิดดึงราคาจากเว็บ</div>
-                    </div>
-                    <button class="btn-add danger" onclick="recorderClearLibrary()" style="margin-top: 8px; width: 100%;" id="recClearLibraryBtn" disabled>🗑️ เคลียร์ทั้งหมด</button>
                 </div>
             </div>
 
@@ -431,10 +517,6 @@
                     <div id="equalMinProfitFloorRow" class="hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                             <label style="font-size: 0.76rem; color: #a7f3d0; font-weight: 600;">🟢 ยิงเฉพาะเมื่อกำไรขั้นต่ำ:</label>
-                            <div class="hedge-toggle" style="padding: 2px;">
-                                <button type="button" id="minProfitFloorModeBaht" class="btn-hedge active" onclick="setMinProfitFloorMode('amount')" style="padding: 2px 8px; font-size: 0.68rem;" title="ระบุจำนวนเงินกำไรขั้นต่ำเป็นบาท">บาท/ฝั่ง</button>
-                                <button type="button" id="minProfitFloorModePercent" class="btn-hedge" onclick="setMinProfitFloorMode('percent')" style="padding: 2px 8px; font-size: 0.68rem;" title="ระบุจำนวนเงินกำไรขั้นต่ำเป็นเปอร์เซ็นต์ของทุน">% ของทุน</button>
-                            </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="font-weight: 700; color: #34d399; font-size: 0.9rem;">≥</span>
@@ -452,123 +534,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- การ์ด 3.3: 🧪 Backtest Hub (Random Mode + Historical Scenario Mode) -->
-            <div class="glossy-panel backtest-hub-panel">
-                <div class="glossy-header" onclick="toggleBacktestHubBody()" style="cursor:pointer;" title="คลิกเพื่อย่อ/ขยายศูนย์ทดสอบย้อนหลัง">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span>🧪 Backtest Hub</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span id="btHubStatusBadge" style="font-size: 0.75rem; opacity: 0.9;">⚪ Idle</span>
-                        <span id="btHubCollapseIcon" style="color:#a855f7; font-size:0.75rem; font-weight:700;">▼ ขยาย</span>
-                    </div>
-                </div>
-                <div class="panel-body" id="backtestHubBody" style="display:none;">
-                    <!-- TAB BAR -->
-                    <div class="bt-tab-bar">
-                        <button class="bt-tab-btn active" id="btTabRandom" onclick="btSwitchTab('random')">🎲 Random (คลาสสิค)</button>
-                        <button class="bt-tab-btn" id="btTabHistory" onclick="btSwitchTab('historical')">📚 Historical</button>
-                    </div>
-
-                    <!-- ========== 🎲 RANDOM MODE (startSimulation คลาสสิค) ========== -->
-                    <div id="btRandomPanel" class="bt-mode-panel">
-                        <div class="bt-random-config-row">
-                            <label>จำนวนสถานการณ์:</label>
-                            <input type="number" id="btRandomCount" value="0" min="0" step="1">
-                            <small>(0 = ไม่สิ้นสุด)</small>
-                        </div>
-                        <div class="bt-random-config-row">
-                            <label>เปลี่ยนทุกๆ:</label>
-                            <input type="number" id="btRandomInterval" value="20" min="1" step="1">
-                            <small>วินาที</small>
-                        </div>
-                        <div class="bt-btn-row">
-                            <button class="btn-bt start" onclick="btRandomStart()" id="btRandomStartBtn">🚀 เริ่ม</button>
-                            <button class="btn-bt pause" onclick="btRandomPause()" id="btRandomPauseBtn" disabled>⏸️ พัก</button>
-                            <button class="btn-bt resume" onclick="btRandomResume()" id="btRandomResumeBtn" disabled>▶️ ต่อ</button>
-                            <button class="btn-bt stop" onclick="btRandomStop()" id="btRandomStopBtn" disabled>🛑 หยุด</button>
-                        </div>
-                        <div id="btRandomInfoBox" class="bt-info-box">
-                            <div class="bt-info-row"><span>ผลล่าสุด:</span><b id="btRandomLastRound">-</b></div>
-                            <div class="bt-info-row"><span>สถานะ:</span><b id="btRandomSubStatus">พร้อมใช้งาน</b></div>
-                        </div>
-                    </div>
-
-                    <!-- ========== 📚 HISTORICAL MODE (Scenario Interactive Step) ========== -->
-                    <div id="btHistoryPanel" class="bt-mode-panel hidden">
-                        <div class="bt-hist-header">
-                            <div>
-                                <label>คลัง Scenario จาก data.js:</label>
-                                <b id="btHistLibCount">0 ไฟท์</b>
-                            </div>
-                            <div>
-                                <label>เลือก Scenario:</label>
-                                <select id="btHistScenarioSelect" onchange="btHistLoadScenario(this.value)">
-                                    <option value="">— ยังไม่มีข้อมูล —</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="btHistInfoBox" class="bt-info-box">
-                            <div class="bt-info-row"><span>นักมวย:</span><b id="btHistFighters">-</b></div>
-                            <div class="bt-info-row"><span>🏆 แชมป์จริง:</span><b id="btHistWinner">-</b></div>
-                            <div class="bt-info-row"><span>จุดราคา:</span><b id="btHistStepInfo">-</b></div>
-                            <div class="bt-info-row"><span>เวลาสุดท้าย:</span><small id="btHistTimeInfo">-</small></div>
-                        </div>
-
-                        <div class="bt-hist-control-bar">
-                            <button class="btn-bt first" onclick="btHistJump(0)" id="btHistFirstBtn">⏮️⏮️ 🔄 เริ่มใหม่</button>
-                            <button class="btn-bt prev" onclick="btHistStep(-1)" id="btHistPrevBtn" disabled>⏮️ 📍 กลับ</button>
-                            <button class="btn-bt next" onclick="btHistStep(+1)" id="btHistNextBtn">⏭️ ราคาต่อไป</button>
-                            <button class="btn-bt last" onclick="btHistJumpToEnd()" id="btHistLastBtn">⏭️⏭️ 🏆 แสดงผลชนะ</button>
-                        </div>
-
-                        <div class="bt-hist-autostep-row">
-                            <div id="btHistAutoToggle" class="auto-confirm-toggle">
-                                <button class="btn-confirm off active" onclick="btHistSetAuto(false)" id="btHistAutoOffBtn">⏩ Auto-step OFF</button>
-                                <button class="btn-confirm on" onclick="btHistSetAuto(true)" id="btHistAutoOnBtn">⏩ Auto-step ON</button>
-                            </div>
-                            <div class="bt-hist-speed-wrap">
-                                <label for="btHistAutoSpeed">ความเร็ว:</label>
-                                <input type="number" id="btHistAutoSpeed" min="0.1" step="0.1" value="10">
-                                <small>วินาที/จุด</small>
-                            </div>
-                        </div>
-
-                        <div class="bt-timeline-wrap">
-                            <label>Timeline ราคา (คลิกเพื่อ jump):</label>
-                            <div id="btHistTimeline" class="bt-timeline">
-                                <small class="bt-timeline-empty">ยังไม่ได้โหลด Scenario</small>
-                            </div>
-                        </div>
-
-                        <div class="bt-hist-scenariobar">
-                            <button class="btn-bt scenario" onclick="btHistPrevScenario()" id="btHistPrevScnBtn">⬅️ ก่อนหน้า</button>
-                            <button class="btn-bt scenario" onclick="btHistRandomScenario()">🎲 สุ่มจากคลัง</button>
-                            <button class="btn-bt scenario" onclick="btHistNextScenario()" id="btHistNextScnBtn">ถัดไป ➡️</button>
-                        </div>
-                    </div>
-
-                    <!-- ========== 📊 Aggregate Report (ทั้งสอง mode) ========== -->
-                    <div class="bt-aggregate-wrap">
-                        <div class="bt-aggregate-title">📊 สรุปผล Scenario ที่ผ่านมา: <b id="btAggCount">0</b> ครั้ง</div>
-                        <div class="bt-aggregate-grid">
-                            <div><span>🏆 Win Rate:</span><b id="btAggWinRate">-</b></div>
-                            <div><span>💰 PnL รวม:</span><b id="btAggTotalPnL">-</b></div>
-                            <div><span>📈 เฉลี่ย/ไฟท์:</span><b id="btAggAvg">-</b></div>
-                            <div><span>📉 Max DD:</span><b id="btAggDD">-</b></div>
-                            <div><span>⚖️ Profit Factor:</span><b id="btAggPF">-</b></div>
-                            <div><span>🧾 Hedge Hit:</span><b id="btAggHedge">-</b></div>
-                        </div>
-                        <div class="bt-btn-row">
-                            <button class="btn-bt report" onclick="btAggExportMd()">📄 ดูรายละเอียด (.md)</button>
-                            <button class="btn-bt report" onclick="btAggExportCsv()">📊 ส่งออก CSV</button>
-                            <button class="btn-bt stop" onclick="btAggReset()">🗑️ ล้างประวัติ</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
     </div>

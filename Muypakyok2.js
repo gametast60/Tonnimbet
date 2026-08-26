@@ -1031,25 +1031,9 @@ function setPartialCalcVisible(val) {
     if (icon) icon.textContent = val ? '▲ ย่อ' : '▼ ขยาย';
 }
 
-function toggleRecorderPanelBody() {
-    const body = document.getElementById('recorderPanelBody');
-    const icon = document.getElementById('recorderCollapseIcon');
-    if (!body) return;
-    const isHidden = body.style.display === 'none' || body.classList.contains('hidden');
-    if (isHidden) {
-        body.classList.remove('hidden');
-        body.style.display = '';
-        if (icon) icon.textContent = '▲ ย่อ';
-    } else {
-        body.classList.add('hidden');
-        body.style.display = 'none';
-        if (icon) icon.textContent = '▼ ขยาย';
-    }
-}
-
-function toggleBacktestHubBody() {
-    const body = document.getElementById('backtestHubBody');
-    const icon = document.getElementById('btHubCollapseIcon');
+function toggleStudioBody() {
+    const body = document.getElementById('studioPanelBody');
+    const icon = document.getElementById('studioCollapseIcon');
     if (!body) return;
     const isHidden = body.style.display === 'none' || body.classList.contains('hidden');
     if (isHidden) {
@@ -1065,8 +1049,9 @@ function toggleBacktestHubBody() {
 
 window.togglePartialCutLossBody = togglePartialCutLossBody;
 window.setPartialCalcVisible = setPartialCalcVisible;
-window.toggleRecorderPanelBody = toggleRecorderPanelBody;
-window.toggleBacktestHubBody = toggleBacktestHubBody;
+window.toggleStudioBody = toggleStudioBody;
+window.toggleRecorderPanelBody = toggleStudioBody;
+window.toggleBacktestHubBody = toggleStudioBody;
 
 function _tryLocateConfirmButtons(rootEl) {
     const root = rootEl || document;
@@ -1144,7 +1129,6 @@ let autoLimitOrder = {
     enabled: false,
     targetStrategy: 'skew_runner', // 'skew_runner' | 'equal' | 'breakeven' | 'smart_cut'
     targetLabel: 'รันกำไร 70/30',
-    minProfitFloorMode: 'amount',   // 'amount' | 'percent'
     minProfitFloorValue: 0
 };
 
@@ -1154,21 +1138,6 @@ const strategyLabelMap = {
     breakeven:   '🟡 ขอเท่าทุน',
     smart_cut:   '🛡️ ยอมเสียน้อย'
 };
-
-function setMinProfitFloorMode(mode) {
-    autoLimitOrder.minProfitFloorMode = mode === 'percent' ? 'percent' : 'amount';
-    const btnBaht = document.getElementById('minProfitFloorModeBaht');
-    const btnPct = document.getElementById('minProfitFloorModePercent');
-    const suffix = document.getElementById('minProfitFloorUnitSuffix');
-
-    if (btnBaht) btnBaht.classList.toggle('active', autoLimitOrder.minProfitFloorMode === 'amount');
-    if (btnPct) btnPct.classList.toggle('active', autoLimitOrder.minProfitFloorMode === 'percent');
-    if (suffix) suffix.textContent = autoLimitOrder.minProfitFloorMode === 'percent' ? '%' : 'บาท';
-
-    if (typeof calculateAll === 'function') {
-        calculateAll();
-    }
-}
 
 function onMinProfitFloorValueChange() {
     const input = document.getElementById('minProfitFloorValue');
@@ -1182,7 +1151,6 @@ function onMinProfitFloorValueChange() {
 
 if (typeof window !== 'undefined') {
     window.autoLimitOrder = autoLimitOrder;
-    window.setMinProfitFloorMode = setMinProfitFloorMode;
     window.onMinProfitFloorValueChange = onMinProfitFloorValueChange;
 }
 
@@ -1453,13 +1421,7 @@ function checkAndFireAutoHedge(leadingCorner, isHedgeByFav, targetRatio) {
 
     // 🆕 Minimum Profit Floor guard — เฉพาะ equal strategy เท่านั้น
     if (targetStrat === 'equal') {
-        const floorMode = autoLimitOrder.minProfitFloorMode || 'amount';
-        const floorRaw = parseFloat(autoLimitOrder.minProfitFloorValue) || 0;
-        let floorBaht = floorRaw;
-        if (floorMode === 'percent') {
-            const totalCapital = parseFloat((document.getElementById('totalCapital') || {}).value) || 0;
-            floorBaht = totalCapital * (floorRaw / 100);
-        }
+        const floorBaht = parseFloat(autoLimitOrder.minProfitFloorValue) || 0;
         const worstSideProfit = Math.min(targetResult.finalRedProf, targetResult.finalBlueProf);
         if (worstSideProfit < floorBaht) {
             // ยัง "ready" ตามนิยามเดิม แต่ยังไม่ถึงกำไรขั้นต่ำที่ผู้ใช้ตั้งไว้ -> ยังไม่ยิง

@@ -144,6 +144,7 @@
 
         clearTimeout(_rec.debounceTimer);
         _rec.debounceTimer = setTimeout(() => {
+            if (!_rec.active) return;
             const snap = _recCaptureSnap(sourceHint);
             if (!snap) return;
             if (_recIsDuplicate(snap)) return;
@@ -474,13 +475,11 @@
     }
 
     function _recRenderStatus() {
-        const badge = document.getElementById('recorderStatusBadge');
         const btnStart = document.querySelector('button[onclick="recorderStartFight()"]');
         const btnEndRed = document.querySelector('button[onclick="recorderEndFight(\'red\')"]');
         const btnEndBlue = document.querySelector('button[onclick="recorderEndFight(\'blue\')"]');
         const btnCancel = document.getElementById('recCancelBtn');
-        if (badge) badge.textContent = _rec.active ? '🔴 บันทึกอยู่...' : '⚪ Idle';
-        if (badge) badge.style.color = _rec.active ? '#ef4444' : '#94a3b8';
+        updateStudioBadge();
         if (btnStart) btnStart.disabled = !!_rec.active;
         if (btnEndRed) btnEndRed.disabled = !_rec.active;
         if (btnEndBlue) btnEndBlue.disabled = !_rec.active;
@@ -523,81 +522,43 @@
 
 
     // =====================================================
-    // 🧪 2. Backtest Hub — TAB Random + TAB Historical
+    // 📝 2. Fight Data Studio — Mode Switching & Hub Status
     // =====================================================
 
-    let _btTab = 'random';
+    let _studioMode = 'record';
 
-    function btSwitchTab(tab) {
-        _btTab = tab;
-        ['btTabRandom','btTabHistory'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.classList.remove('active');
-        });
-        if (document.getElementById('btTabRandom')) document.getElementById('btTabRandom').classList.toggle('active', tab === 'random');
-        if (document.getElementById('btTabHistory')) document.getElementById('btTabHistory').classList.toggle('active', tab === 'historical');
-        const rp = document.getElementById('btRandomPanel'); const hp = document.getElementById('btHistoryPanel');
-        if (rp) rp.classList.toggle('hidden', tab !== 'random');
-        if (hp) hp.classList.toggle('hidden', tab !== 'historical');
-        if (tab === 'historical') btHistInit();
-        btRenderHubBadge();
-    }
-
-    function btRenderHubBadge() {
-        const badge = document.getElementById('btHubStatusBadge');
+    function updateStudioBadge() {
+        const badge = document.getElementById('recorderStatusBadge');
         if (!badge) return;
-        if (_btTab === 'random') {
-            if (window._simTimer) { badge.textContent = window._isSimPaused ? '⏸️ พัก' : '🎲 รันอยู่'; badge.style.color='#f59e0b'; }
-            else { badge.textContent='⚪ Idle'; badge.style.color='#94a3b8'; }
+        if (_studioMode === 'record') {
+            badge.textContent = _rec.active ? '🔴 กำลังบันทึก' : '⚪ Idle';
+            badge.style.color = _rec.active ? '#ef4444' : '#94a3b8';
         } else {
-            badge.textContent = _player && _player.loaded ? '📚 เปิด Scenario' : '⚪ Idle';
-            badge.style.color = _player && _player.loaded ? '#3b82f6' : '#94a3b8';
+            badge.textContent = (_player && _player.loaded) ? '📚 เปิด Scenario' : '⚪ Idle';
+            badge.style.color = (_player && _player.loaded) ? '#38bdf8' : '#94a3b8';
         }
     }
-    window.btSwitchTab = btSwitchTab;
+    window.updateStudioBadge = updateStudioBadge;
 
-    // ---------- RANDOM MODE: Wrap startSimulation + sync UI ----------
-    function btRandomStart() {
-        const cnt = parseInt((document.getElementById('btRandomCount') || {}).value) || 0;
-        const intv = parseInt((document.getElementById('btRandomInterval') || {}).value) || 20;
-        startSimulation(cnt, intv);
-        btRandomSync();
+    function setStudioMode(mode) {
+        _studioMode = mode;
+        const recBtn = document.getElementById('studioModeRecordBtn');
+        const btBtn = document.getElementById('studioModeBacktestBtn');
+        const recPanel = document.getElementById('studioRecordPanel');
+        const btPanel = document.getElementById('studioBacktestPanel');
+
+        if (recBtn) recBtn.classList.toggle('active', mode === 'record');
+        if (btBtn) btBtn.classList.toggle('active', mode === 'backtest');
+
+        if (recPanel) recPanel.classList.toggle('hidden', mode !== 'record');
+        if (btPanel) btPanel.classList.toggle('hidden', mode !== 'backtest');
+
+        if (mode === 'backtest') {
+            btHistInit();
+        }
+        updateStudioBadge();
     }
-    function btRandomPause() { pauseSimulation(); btRandomSync(); }
-    function btRandomResume() { resumeSimulation(); btRandomSync(); }
-    function btRandomStop() { stopSimulation(); btRandomSync(); document.getElementById('btRandomSubStatus') && (document.getElementById('btRandomSubStatus').textContent = 'หยุดแล้ว'); }
-
-    function btRandomSync() {
-        const s = document.getElementById('btRandomStartBtn');
-        const p = document.getElementById('btRandomPauseBtn');
-        const r = document.getElementById('btRandomResumeBtn');
-        const x = document.getElementById('btRandomStopBtn');
-        const running = !!window._simTimer;
-        if (s) s.disabled = running;
-        if (x) x.disabled = !running && !window._isSimPaused;
-        if (p) p.disabled = !running || window._isSimPaused;
-        if (r) r.disabled = !window._isSimPaused;
-        const last = document.getElementById('btRandomLastRound');
-        const st = document.getElementById('btRandomSubStatus');
-        if (last) last.textContent = running ? `รอบ #${window._simCount}${window._simMaxCount!==Infinity?` / ${window._simMaxCount}`:''}` : '-';
-        if (st) st.textContent = running ? (window._isSimPaused ? `พักที่รอบ #${window._simCount}` : `เปลี่ยนทุกๆ ${window._simIntervalSec} วิ`) : 'พร้อมใช้งาน';
-        btRenderHubBadge();
-    }
-
-    // Wrap original startSimulation family ให้ sync UI
-    const _origStart = window.startSimulation;
-    window.startSimulation = function () { const r = _origStart && _origStart.apply(this, arguments); setTimeout(btRandomSync, 50); return r; };
-    const _origPause = window.pauseSimulation;
-    window.pauseSimulation = function () { const r = _origPause && _origPause.apply(this, arguments); setTimeout(btRandomSync, 50); return r; };
-    const _origResume = window.resumeSimulation;
-    window.resumeSimulation = function () { const r = _origResume && _origResume.apply(this, arguments); setTimeout(btRandomSync, 50); return r; };
-    const _origStop = window.stopSimulation;
-    window.stopSimulation = function () { const r = _origStop && _origStop.apply(this, arguments); setTimeout(btRandomSync, 50); return r; };
-
-    window.btRandomStart = btRandomStart;
-    window.btRandomPause = btRandomPause;
-    window.btRandomResume = btRandomResume;
-    window.btRandomStop = btRandomStop;
-    window.__btRandomSync = btRandomSync;
+    window.setStudioMode = setStudioMode;
 
     // =====================================================
     // 🔊 Shared: Play Sound เมื่อราคาเปลี่ยน (ใช้ทั้ง Random / Historical mode)
@@ -669,17 +630,56 @@
     }
     function _aggSave() { try { localStorage.setItem(AGG_STORE_KEY, JSON.stringify(_agg)); } catch (e) {} }
 
+    function btHistRenderScenarioList() {
+        const lib = (window.HISTORICAL_FIGHTS && Array.isArray(window.HISTORICAL_FIGHTS)) ? window.HISTORICAL_FIGHTS : [];
+        if (!_player.library || _player.library.length === 0) {
+            _player.library = lib.filter(x => x && x.journey && Array.isArray(x.journey) && x.journey.length >= 1 && x.winner);
+        }
+        const q = (document.getElementById('btHistSearchInput')?.value || '').trim().toLowerCase();
+        const filtered = _player.library
+            .map((f, idx) => ({ f, idx }))
+            .filter(({f}) => !q ||
+                (f.fighters?.red || '').toLowerCase().includes(q) ||
+                (f.fighters?.blue || '').toLowerCase().includes(q) ||
+                (f.fightId || '').toLowerCase().includes(q));
+
+        const cntEl = document.getElementById('btHistLibCount');
+        if (cntEl) cntEl.textContent = `${filtered.length} ไฟท์`;
+
+        const listEl = document.getElementById('btHistScenarioList');
+        if (!listEl) return;
+        if (filtered.length === 0) {
+            listEl.innerHTML = `<div class="studio-lib-empty">ไม่พบไฟท์ที่ตรงกับคำค้นหา</div>`;
+            return;
+        }
+        listEl.innerHTML = filtered.map(({f, idx}) => {
+            const winLabel = f.winner === 'red' ? '🔴 แดงชนะ' : '🔵 น้ำเงินชนะ';
+            const isSel = (idx === _player.scenarioIdx && _player.loaded);
+            return `<div class="studio-lib-row ${isSel ? 'selected' : ''}" onclick="btHistLoadScenario(${idx})">
+                <span class="studio-lib-fighters">${f.fighters?.red || '-'}<span class="vs">vs</span>${f.fighters?.blue || '-'}</span>
+                <span class="studio-win-chip ${f.winner}">${winLabel}</span>
+                <button class="studio-lib-action" title="โหลดเข้า Backtest" onclick="event.stopPropagation(); btHistLoadScenario(${idx})">▶️</button>
+            </div>`;
+        }).join('');
+    }
+    window.btHistRenderScenarioList = btHistRenderScenarioList;
+
+    let _scenarioLibCollapsed = true;
+    function toggleScenarioLibraryBody() {
+        _scenarioLibCollapsed = !_scenarioLibCollapsed;
+        const body = document.getElementById('scenarioLibraryBody');
+        if (body) body.classList.toggle('hidden', _scenarioLibCollapsed);
+        const icon = document.getElementById('scenarioLibCollapseIcon');
+        if (icon) icon.textContent = _scenarioLibCollapsed ? '▼ ขยาย' : '▲ ย่อ';
+    }
+    window.toggleScenarioLibraryBody = toggleScenarioLibraryBody;
+
     function btHistInit() {
         const lib = (window.HISTORICAL_FIGHTS && Array.isArray(window.HISTORICAL_FIGHTS)) ? window.HISTORICAL_FIGHTS : [];
         _player.library = lib.filter(x => x && x.journey && Array.isArray(x.journey) && x.journey.length >= 1 && x.winner);
         const cntEl = document.getElementById('btHistLibCount');
         if (cntEl) cntEl.textContent = `${_player.library.length} ไฟท์`;
-        const sel = document.getElementById('btHistScenarioSelect');
-        if (sel) {
-            sel.innerHTML = _player.library.length === 0
-                ? '<option value="">— ยังไม่มีข้อมูลใน data.js —</option>'
-                : '<option value="">— เลือก Scenario —</option>' + _player.library.map((x, i) => `<option value="${i}">#${i+1} ${x.fightId}</option>`).join('');
-        }
+        btHistRenderScenarioList();
         // ✅ ถ้ายังไม่มี scenario โหลด → รีเซ็ตชื่อนักมวยบนหัวกลับเป็นค่าว่าง
         if (!_player.loaded) {
             const rn = document.getElementById('redFighterNameHeader');
@@ -695,6 +695,7 @@
             if (typeof updateFighterAvatarFavStatus === 'function') updateFighterAvatarFavStatus(null, true);
         }
         btHistRenderButtons();
+        updateStudioBadge();
     }
 
     function btHistLoadScenario(idxStr) {
@@ -705,17 +706,18 @@
         _player.stepIndex = 0;
         _player.snapshots = new Array(_player.scenario.journey.length);
         if (_player.autoTimer) { clearInterval(_player.autoTimer); _player.autoTimer = null; btHistToggleAutoUI(false); }
-        const sel = document.getElementById('btHistScenarioSelect');
-        if (sel && sel.value !== String(idx)) sel.value = String(idx);
         btHistApplyStep(0, true);
         btHistRenderScenarioInfo();
         btHistRenderTimeline();
         btHistRenderButtons();
+        btHistRenderScenarioList();
+        updateStudioBadge();
     }
 
     function btHistPrevScenario() { if (_player.library.length === 0) return; const next = (_player.scenarioIdx - 1 + _player.library.length) % _player.library.length; btHistLoadScenario(next); }
     function btHistNextScenario() { if (_player.library.length === 0) return; const next = (_player.scenarioIdx + 1) % _player.library.length; btHistLoadScenario(next); }
     function btHistRandomScenario() { if (_player.library.length === 0) return; const next = Math.floor(Math.random() * _player.library.length); btHistLoadScenario(next); }
+    window.btHistInit = btHistInit;
     window.btHistPrevScenario = btHistPrevScenario; window.btHistNextScenario = btHistNextScenario; window.btHistRandomScenario = btHistRandomScenario; window.btHistLoadScenario = btHistLoadScenario;
 
     function _captureWholeState() {
@@ -1239,83 +1241,13 @@
     }
     window.btAggExportMd = btAggExportMd; window.btAggExportCsv = btAggExportCsv; window.btAggReset = btAggReset;
 
-    function _findPanelByText(column, text) {
-        if (!column) return null;
-        return Array.from(column.querySelectorAll('.glossy-panel')).find(panel => panel.textContent.includes(text)) || null;
-    }
-
-    // จัดตำแหน่งแผงเสริมให้อยู่เหนือแผงหลักของแต่ละคอลัมน์
-    function _relocateExtensionPanels() {
-        const recorder = document.querySelector('.recorder-panel');
-        const backtest = document.querySelector('.backtest-hub-panel');
-        const leftColumn = document.querySelector('.col-left');
-        const rightColumn = document.querySelector('.col-right');
-        const historyPanel = _findPanelByText(leftColumn, 'History Bet');
-        const strategyPanel = _findPanelByText(rightColumn, 'Matchs & Strategy');
-
-        if (recorder && historyPanel && recorder !== historyPanel) {
-            historyPanel.parentElement.insertBefore(recorder, historyPanel);
-        }
-        if (backtest && strategyPanel && backtest !== strategyPanel) {
-            strategyPanel.parentElement.insertBefore(backtest, strategyPanel);
-        }
-    }
-
-    // พับแผง Recorder / Backtest ไว้ก่อน เพื่อไม่ให้กินพื้นที่หน้าหลัก
-    function _installPanelCollapse() {
-        [
-            { selector: '.recorder-panel', title: '📝 Fight Data Recorder' },
-            { selector: '.backtest-hub-panel', title: '🧪 Backtest Hub' }
-        ].forEach(({ selector, title }) => {
-            const panel = document.querySelector(selector);
-            if (!panel || panel.dataset.collapseReady === 'true') return;
-
-            const header = panel.querySelector(':scope > .recorder-panel-header, :scope > .backtest-panel-header, :scope > .glossy-header') || panel.firstElementChild;
-            if (!header) return;
-
-            const content = document.createElement('div');
-            content.className = 'collapsible-panel-content';
-            while (header.nextElementSibling) content.appendChild(header.nextElementSibling);
-            panel.appendChild(content);
-
-            const toggle = document.createElement('button');
-            toggle.type = 'button';
-            toggle.className = 'collapsible-panel-toggle';
-            toggle.setAttribute('aria-expanded', 'false');
-            const headerLabel = document.createElement('span');
-            headerLabel.className = 'collapsible-panel-label';
-            if (header.childNodes.length) {
-                while (header.firstChild) headerLabel.appendChild(header.firstChild);
-            } else {
-                headerLabel.textContent = title;
-            }
-            const chevron = document.createElement('span');
-            chevron.className = 'collapsible-panel-chevron';
-            chevron.textContent = '⌄';
-            toggle.append(headerLabel, chevron);
-            header.classList.add('collapsible-panel-header');
-            header.appendChild(toggle);
-
-            toggle.addEventListener('click', () => {
-                const open = panel.classList.toggle('is-expanded');
-                content.hidden = !open;
-                toggle.setAttribute('aria-expanded', String(open));
-            });
-            content.hidden = true;
-            panel.dataset.collapseReady = 'true';
-        });
-    }
-
     // ---------- Init เมื่อ DOM พร้อม ----------
     function _initUI() {
-        _relocateExtensionPanels();
-        _installPanelCollapse();
         _recLoadLibrary();
         _recRenderStatus();
         _aggLoad();
         btAggRender();
-        btSwitchTab('random');
-        setTimeout(() => { btRandomSync(); btHistInit(); }, 100);
+        btHistInit();
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _initUI);
