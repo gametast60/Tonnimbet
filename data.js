@@ -4658,6 +4658,1026 @@ window.HISTORICAL_FIGHTS = [
         ]
     },
 
+        {
+        fightId: "fight_20260827_200807",
+        recordedAt: 1787828887419,
+        settledAt:  1787830911530,
+        fighters: { red: "Phet Atom Kiat Chamrun", blue: "Huai Senang S.S.Pakorn Surin" },
+        initialFav: "red",
+        initialOdds: { a: 2, b: 1 },
+        winner: "red",
+        journey: [
+            {
+                step: 0, offsetMs: 60, src: "open",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 1, offsetMs: 340949, src: "auto_sync",
+                red:  { a: 7, b: 4, raw: "🔴 แดง: HDP 7 : 4", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 7 : 4"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 4,
+                fav: "red", a: 7, b: 4
+            },
+            {
+                step: 2, offsetMs: 363944, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 3, offsetMs: 385214, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 4, offsetMs: 525205, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 5, offsetMs: 546959, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 6, offsetMs: 574940, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 7, offsetMs: 605445, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 3 : 1"},"blue":{"a":1,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 2 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 8, offsetMs: 617443, src: "auto_sync",
+                red:  { a: 7, b: 2, raw: "🔴 แดง: HDP 7 : 2", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 7 : 2"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 2,
+                fav: "red", a: 7, b: 2
+            },
+            {
+                step: 9, offsetMs: 739703, src: "auto_sync",
+                red:  { a: 4, b: 1, raw: "🔴 แดง: HDP 4 : 1", isValid: true },
+                blue: { a: 1, b: 3, raw: "🔵 น้ำเงิน: 1 : 3 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 4 : 1"},"blue":{"a":1,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 3 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 4, resolvedB: 1,
+                fav: "red", a: 4, b: 1
+            },
+            {
+                step: 10, offsetMs: 789859, src: "auto_sync",
+                red:  { a: 7, b: 2, raw: "🔴 แดง: HDP 7 : 2", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 7 : 2"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 2,
+                fav: "red", a: 7, b: 2
+            },
+            {
+                step: 11, offsetMs: 808468, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 12, offsetMs: 833204, src: "auto_sync",
+                red:  { a: 7, b: 2, raw: "🔴 แดง: HDP 7 : 2", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 7 : 2"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 2,
+                fav: "red", a: 7, b: 2
+            },
+            {
+                step: 13, offsetMs: 850198, src: "auto_sync",
+                red:  { a: 5, b: 1, raw: "🔴 แดง: HDP 5 : 1", isValid: true },
+                blue: { a: 1, b: 3, raw: "🔵 น้ำเงิน: 1 : 3 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 5 : 1"},"blue":{"a":1,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 3 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 1,
+                fav: "red", a: 5, b: 1
+            },
+            {
+                step: 14, offsetMs: 874459, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 3 : 1"},"blue":{"a":1,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 2 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 15, offsetMs: 894951, src: "auto_sync",
+                red:  { a: 4, b: 1, raw: "🔴 แดง: HDP 4 : 1", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 4 : 1"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 4, resolvedB: 1,
+                fav: "red", a: 4, b: 1
+            },
+            {
+                step: 16, offsetMs: 929757, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 17, offsetMs: 998456, src: "auto_sync",
+                red:  { a: 7, b: 4, raw: "🔴 แดง: HDP 7 : 4", isValid: true },
+                blue: { a: 2, b: 3, raw: "🔵 น้ำเงิน: 2 : 3 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 7 : 4"},"blue":{"a":2,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 3 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 4,
+                fav: "red", a: 7, b: 4
+            },
+            {
+                step: 18, offsetMs: 1020707, src: "auto_sync",
+                red:  { a: 5, b: 4, raw: "🔴 แดง: HDP 5 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 5 : 4"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 4,
+                fav: "red", a: 5, b: 4
+            },
+            {
+                step: 19, offsetMs: 1049455, src: "auto_sync",
+                red:  { a: 11, b: 8, raw: "🔴 แดง: HDP 11 : 8", isValid: true },
+                blue: { a: 9, b: 10, raw: "🔵 น้ำเงิน: 9 : 10 HDP", isValid: true },
+                v2: {"red":{"a":11,"b":8,"isValid":true,"raw":"🔴 แดง: HDP 11 : 8"},"blue":{"a":9,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 9 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 11, resolvedB: 8,
+                fav: "red", a: 11, b: 8
+            },
+            {
+                step: 20, offsetMs: 1090709, src: "auto_sync",
+                red:  { a: 5, b: 4, raw: "🔴 แดง: HDP 5 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 5 : 4"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 4,
+                fav: "red", a: 5, b: 4
+            },
+            {
+                step: 21, offsetMs: 1124201, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 22, offsetMs: 1140957, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 23, offsetMs: 1163205, src: "auto_sync",
+                red:  { a: 2, b: 3, raw: "🔴 แดง: HDP 2 : 3", isValid: true },
+                blue: { a: 2, b: 1, raw: "🔵 น้ำเงิน: 2 : 1 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":3,"isValid":true,"raw":"🔴 แดง: HDP 2 : 3"},"blue":{"a":2,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 2, resolvedB: 1,
+                fav: "blue", a: 2, b: 1
+            },
+            {
+                step: 24, offsetMs: 1180950, src: "auto_sync",
+                red:  { a: 1, b: 2, raw: "🔴 แดง: HDP 1 : 2", isValid: true },
+                blue: { a: 3, b: 1, raw: "🔵 น้ำเงิน: 3 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 1 : 2"},"blue":{"a":3,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 1,
+                fav: "blue", a: 3, b: 1
+            },
+            {
+                step: 25, offsetMs: 1221198, src: "auto_sync",
+                red:  { a: 4, b: 7, raw: "🔴 แดง: HDP 4 : 7", isValid: true },
+                blue: { a: 5, b: 2, raw: "🔵 น้ำเงิน: 5 : 2 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":7,"isValid":true,"raw":"🔴 แดง: HDP 4 : 7"},"blue":{"a":5,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 2 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 2,
+                fav: "blue", a: 5, b: 2
+            },
+            {
+                step: 26, offsetMs: 1232459, src: "auto_sync",
+                red:  { a: 2, b: 5, raw: "🔴 แดง: HDP 2 : 5", isValid: true },
+                blue: { a: 4, b: 1, raw: "🔵 น้ำเงิน: 4 : 1 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":5,"isValid":true,"raw":"🔴 แดง: HDP 2 : 5"},"blue":{"a":4,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 4, resolvedB: 1,
+                fav: "blue", a: 4, b: 1
+            },
+            {
+                step: 27, offsetMs: 1245459, src: "auto_sync",
+                red:  { a: 1, b: 4, raw: "🔴 แดง: HDP 1 : 4", isValid: true },
+                blue: { a: 7, b: 1, raw: "🔵 น้ำเงิน: 7 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 1 : 4"},"blue":{"a":7,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 7 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 7, resolvedB: 1,
+                fav: "blue", a: 7, b: 1
+            },
+            {
+                step: 28, offsetMs: 1309469, src: "auto_sync",
+                red:  { a: 1, b: 5, raw: "🔴 แดง: HDP 1 : 5", isValid: true },
+                blue: { a: 7, b: 1, raw: "🔵 น้ำเงิน: 7 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":5,"isValid":true,"raw":"🔴 แดง: HDP 1 : 5"},"blue":{"a":7,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 7 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 7, resolvedB: 1,
+                fav: "blue", a: 7, b: 1
+            },
+            {
+                step: 29, offsetMs: 1370206, src: "auto_sync",
+                red:  { a: 1, b: 6, raw: "🔴 แดง: HDP 1 : 6", isValid: true },
+                blue: { a: 9, b: 1, raw: "🔵 น้ำเงิน: 9 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":6,"isValid":true,"raw":"🔴 แดง: HDP 1 : 6"},"blue":{"a":9,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 9 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 9, resolvedB: 1,
+                fav: "blue", a: 9, b: 1
+            },
+            {
+                step: 30, offsetMs: 1421964, src: "auto_sync",
+                red:  { a: 1, b: 6, raw: "🔴 แดง: HDP 1 : 6", isValid: true },
+                blue: { a: 10, b: 1, raw: "🔵 น้ำเงิน: 10 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":6,"isValid":true,"raw":"🔴 แดง: HDP 1 : 6"},"blue":{"a":10,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 10, resolvedB: 1,
+                fav: "blue", a: 10, b: 1
+            },
+            {
+                step: 31, offsetMs: 1439698, src: "auto_sync",
+                red:  { a: 2, b: 5, raw: "🔴 แดง: HDP 2 : 5", isValid: true },
+                blue: { a: 4, b: 1, raw: "🔵 น้ำเงิน: 4 : 1 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":5,"isValid":true,"raw":"🔴 แดง: HDP 2 : 5"},"blue":{"a":4,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 4, resolvedB: 1,
+                fav: "blue", a: 4, b: 1
+            },
+            {
+                step: 32, offsetMs: 1468960, src: "auto_sync",
+                red:  { a: 1, b: 3, raw: "🔴 แดง: HDP 1 : 3", isValid: true },
+                blue: { a: 5, b: 1, raw: "🔵 น้ำเงิน: 5 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":3,"isValid":true,"raw":"🔴 แดง: HDP 1 : 3"},"blue":{"a":5,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 1,
+                fav: "blue", a: 5, b: 1
+            },
+            {
+                step: 33, offsetMs: 1496198, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 2, b: 1, raw: "🔵 น้ำเงิน: 2 : 1 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":2,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 1 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 2, resolvedB: 1,
+                fav: "blue", a: 2, b: 1
+            },
+            {
+                step: 34, offsetMs: 1514953, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 35, offsetMs: 1546959, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 36, offsetMs: 1630947, src: "auto_sync",
+                red:  { a: 7, b: 4, raw: "🔴 แดง: HDP 7 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 7 : 4"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 4,
+                fav: "red", a: 7, b: 4
+            },
+            {
+                step: 37, offsetMs: 1662963, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 38, offsetMs: 1735459, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 3 : 1"},"blue":{"a":1,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 2 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 39, offsetMs: 1765948, src: "auto_sync",
+                red:  { a: 10, b: 1, raw: "🔴 แดง: HDP 10 : 1", isValid: true },
+                blue: { a: 1, b: 6, raw: "🔵 น้ำเงิน: 1 : 6 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 10 : 1"},"blue":{"a":1,"b":6,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 6 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 10, resolvedB: 1,
+                fav: "red", a: 10, b: 1
+            },
+            {
+                step: 40, offsetMs: 1794961, src: "auto_sync",
+                red:  { a: 16, b: 1, raw: "🔴 แดง: HDP 16 : 1", isValid: true },
+                blue: { a: 1, b: 10, raw: "🔵 น้ำเงิน: 1 : 10 HDP", isValid: true },
+                v2: {"red":{"a":16,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 16 : 1"},"blue":{"a":1,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 16, resolvedB: 1,
+                fav: "red", a: 16, b: 1
+            },
+            {
+                step: 41, offsetMs: 1821211, src: "auto_sync",
+                red:  { a: 50, b: 1, raw: "🔴 แดง: HDP 50 : 1", isValid: true },
+                blue: { a: 1, b: 30, raw: "🔵 น้ำเงิน: 1 : 30 HDP", isValid: true },
+                v2: {"red":{"a":50,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 50 : 1"},"blue":{"a":1,"b":30,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 30 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 50, resolvedB: 1,
+                fav: "red", a: 50, b: 1
+            },
+            {
+                step: 42, offsetMs: 1844463, src: "auto_sync",
+                red:  { a: 200, b: 1, raw: "🔴 แดง: HDP 200 : 1", isValid: true },
+                blue: { a: 1, b: 130, raw: "🔵 น้ำเงิน: 1 : 130 HDP", isValid: true },
+                v2: {"red":{"a":200,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 200 : 1"},"blue":{"a":1,"b":130,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 130 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 200, resolvedB: 1,
+                fav: "red", a: 200, b: 1
+            },
+            {
+                step: 43, offsetMs: 1865962, src: "auto_sync",
+                red:  { a: 180, b: 1, raw: "🔴 แดง: HDP 180 : 1", isValid: true },
+                blue: { a: 1, b: 100, raw: "🔵 น้ำเงิน: 1 : 100 HDP", isValid: true },
+                v2: {"red":{"a":180,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 180 : 1"},"blue":{"a":1,"b":100,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 100 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 180, resolvedB: 1,
+                fav: "red", a: 180, b: 1
+            }
+        ]
+    },
+
+        {
+        fightId: "fight_20260827_204421",
+        recordedAt: 1787831061662,
+        settledAt:  1787832688441,
+        fighters: { red: "Phet Saharat Saimoon Snooker Club", blue: "Niwpakorn M.Ruamjai Pheuan" },
+        initialFav: "red",
+        initialOdds: { a: 3, b: 2 },
+        winner: "blue",
+        journey: [
+            {
+                step: 0, offsetMs: 56, src: "open",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 4, b: 5, raw: "🔵 น้ำเงิน: 4 : 5 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":4,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 1, offsetMs: 20738, src: "auto_sync",
+                red:  { a: 11, b: 8, raw: "🔴 แดง: HDP 11 : 8", isValid: true },
+                blue: { a: 9, b: 10, raw: "🔵 น้ำเงิน: 9 : 10 HDP", isValid: true },
+                v2: {"red":{"a":11,"b":8,"isValid":true,"raw":"🔴 แดง: HDP 11 : 8"},"blue":{"a":9,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 9 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 11, resolvedB: 8,
+                fav: "red", a: 11, b: 8
+            },
+            {
+                step: 2, offsetMs: 34220, src: "auto_sync",
+                red:  { a: 5, b: 4, raw: "🔴 แดง: HDP 5 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 5 : 4"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 4,
+                fav: "red", a: 5, b: 4
+            },
+            {
+                step: 3, offsetMs: 94228, src: "auto_sync",
+                red:  { a: 10, b: 9, raw: "🔴 แดง: HDP 10 : 9", isValid: true },
+                blue: { a: 10, b: 9, raw: "🔵 น้ำเงิน: 10 : 9 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":9,"isValid":true,"raw":"🔴 แดง: HDP 10 : 9"},"blue":{"a":10,"b":9,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 9 HDP"},"derived":{"redStatus":"fav","blueStatus":"fav","marketState":"BOTH_FAV"}},
+                resolvedFav: "red", resolvedA: 10, resolvedB: 9,
+                fav: "red", a: 10, b: 9
+            },
+            {
+                step: 4, offsetMs: 138956, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":5,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 4 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 5, offsetMs: 379965, src: "auto_sync",
+                red:  { a: 9, b: 10, raw: "🔴 แดง: HDP 9 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                v2: {"red":{"a":9,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 9 : 10"},"blue":{"a":5,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 4 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 6, offsetMs: 411205, src: "auto_sync",
+                red:  { a: 4, b: 5, raw: "🔴 แดง: HDP 4 : 5", isValid: true },
+                blue: { a: 11, b: 8, raw: "🔵 น้ำเงิน: 11 : 8 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":5,"isValid":true,"raw":"🔴 แดง: HDP 4 : 5"},"blue":{"a":11,"b":8,"isValid":true,"raw":"🔵 น้ำเงิน: 11 : 8 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 11, resolvedB: 8,
+                fav: "blue", a: 11, b: 8
+            },
+            {
+                step: 7, offsetMs: 437959, src: "auto_sync",
+                red:  { a: 8, b: 11, raw: "🔴 แดง: HDP 8 : 11", isValid: true },
+                blue: { a: 5, b: 3, raw: "🔵 น้ำเงิน: 5 : 3 HDP", isValid: true },
+                v2: {"red":{"a":8,"b":11,"isValid":true,"raw":"🔴 แดง: HDP 8 : 11"},"blue":{"a":5,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 3 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 3,
+                fav: "blue", a: 5, b: 3
+            },
+            {
+                step: 8, offsetMs: 456959, src: "auto_sync",
+                red:  { a: 4, b: 5, raw: "🔴 แดง: HDP 4 : 5", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":5,"isValid":true,"raw":"🔴 แดง: HDP 4 : 5"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 9, offsetMs: 492211, src: "auto_sync",
+                red:  { a: 5, b: 4, raw: "🔴 แดง: HDP 5 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 5 : 4"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 4,
+                fav: "red", a: 5, b: 4
+            },
+            {
+                step: 10, offsetMs: 510212, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":5,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 4 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 11, offsetMs: 539731, src: "auto_sync",
+                red:  { a: 8, b: 11, raw: "🔴 แดง: HDP 8 : 11", isValid: true },
+                blue: { a: 5, b: 3, raw: "🔵 น้ำเงิน: 5 : 3 HDP", isValid: true },
+                v2: {"red":{"a":8,"b":11,"isValid":true,"raw":"🔴 แดง: HDP 8 : 11"},"blue":{"a":5,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 3 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 3,
+                fav: "blue", a: 5, b: 3
+            },
+            {
+                step: 12, offsetMs: 558962, src: "auto_sync",
+                red:  { a: 2, b: 3, raw: "🔴 แดง: HDP 2 : 3", isValid: true },
+                blue: { a: 7, b: 4, raw: "🔵 น้ำเงิน: 7 : 4 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":3,"isValid":true,"raw":"🔴 แดง: HDP 2 : 3"},"blue":{"a":7,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 7 : 4 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 7, resolvedB: 4,
+                fav: "blue", a: 7, b: 4
+            },
+            {
+                step: 13, offsetMs: 580958, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":5,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 4 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 14, offsetMs: 612714, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 4, b: 5, raw: "🔵 น้ำเงิน: 4 : 5 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":4,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 15, offsetMs: 712961, src: "auto_sync",
+                red:  { a: 5, b: 3, raw: "🔴 แดง: HDP 5 : 3", isValid: true },
+                blue: { a: 8, b: 11, raw: "🔵 น้ำเงิน: 8 : 11 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":3,"isValid":true,"raw":"🔴 แดง: HDP 5 : 3"},"blue":{"a":8,"b":11,"isValid":true,"raw":"🔵 น้ำเงิน: 8 : 11 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 3,
+                fav: "red", a: 5, b: 3
+            },
+            {
+                step: 16, offsetMs: 763475, src: "auto_sync",
+                red:  { a: 7, b: 4, raw: "🔴 แดง: HDP 7 : 4", isValid: true },
+                blue: { a: 2, b: 3, raw: "🔵 น้ำเงิน: 2 : 3 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 7 : 4"},"blue":{"a":2,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 3 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 4,
+                fav: "red", a: 7, b: 4
+            },
+            {
+                step: 17, offsetMs: 804213, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 3 : 1"},"blue":{"a":1,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 2 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 18, offsetMs: 833210, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 2, b: 3, raw: "🔵 น้ำเงิน: 2 : 3 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":2,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 3 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 19, offsetMs: 870213, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 20, offsetMs: 998482, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 3 : 1"},"blue":{"a":1,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 2 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 21, offsetMs: 1050961, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 22, offsetMs: 1083213, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 2, b: 3, raw: "🔵 น้ำเงิน: 2 : 3 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":2,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 3 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 23, offsetMs: 1099712, src: "auto_sync",
+                red:  { a: 4, b: 1, raw: "🔴 แดง: HDP 4 : 1", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 4 : 1"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 4, resolvedB: 1,
+                fav: "red", a: 4, b: 1
+            },
+            {
+                step: 24, offsetMs: 1164453, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 25, offsetMs: 1179706, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 26, offsetMs: 1195952, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 27, offsetMs: 1220465, src: "auto_sync",
+                red:  { a: 4, b: 7, raw: "🔴 แดง: HDP 4 : 7", isValid: true },
+                blue: { a: 5, b: 2, raw: "🔵 น้ำเงิน: 5 : 2 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":7,"isValid":true,"raw":"🔴 แดง: HDP 4 : 7"},"blue":{"a":5,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 2 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 2,
+                fav: "blue", a: 5, b: 2
+            },
+            {
+                step: 28, offsetMs: 1280967, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 2, b: 1, raw: "🔵 น้ำเงิน: 2 : 1 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":2,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 1 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 2, resolvedB: 1,
+                fav: "blue", a: 2, b: 1
+            },
+            {
+                step: 29, offsetMs: 1305217, src: "auto_sync",
+                red:  { a: 7, b: 4, raw: "🔴 แดง: HDP 7 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 7 : 4"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 4,
+                fav: "red", a: 7, b: 4
+            },
+            {
+                step: 30, offsetMs: 1344970, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 31, offsetMs: 1360722, src: "auto_sync",
+                red:  { a: 1, b: 2, raw: "🔴 แดง: HDP 1 : 2", isValid: true },
+                blue: { a: 3, b: 1, raw: "🔵 น้ำเงิน: 3 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 1 : 2"},"blue":{"a":3,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 1,
+                fav: "blue", a: 3, b: 1
+            },
+            {
+                step: 32, offsetMs: 1383217, src: "auto_sync",
+                red:  { a: 1, b: 3, raw: "🔴 แดง: HDP 1 : 3", isValid: true },
+                blue: { a: 5, b: 1, raw: "🔵 น้ำเงิน: 5 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":3,"isValid":true,"raw":"🔴 แดง: HDP 1 : 3"},"blue":{"a":5,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 1,
+                fav: "blue", a: 5, b: 1
+            },
+            {
+                step: 33, offsetMs: 1406467, src: "auto_sync",
+                red:  { a: 1, b: 6, raw: "🔴 แดง: HDP 1 : 6", isValid: true },
+                blue: { a: 10, b: 1, raw: "🔵 น้ำเงิน: 10 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":6,"isValid":true,"raw":"🔴 แดง: HDP 1 : 6"},"blue":{"a":10,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 10, resolvedB: 1,
+                fav: "blue", a: 10, b: 1
+            },
+            {
+                step: 34, offsetMs: 1449717, src: "auto_sync",
+                red:  { a: 1, b: 30, raw: "🔴 แดง: HDP 1 : 30", isValid: true },
+                blue: { a: 50, b: 1, raw: "🔵 น้ำเงิน: 50 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":30,"isValid":true,"raw":"🔴 แดง: HDP 1 : 30"},"blue":{"a":50,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 50 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 50, resolvedB: 1,
+                fav: "blue", a: 50, b: 1
+            },
+            {
+                step: 35, offsetMs: 1475734, src: "auto_sync",
+                red:  { a: 1, b: 100, raw: "🔴 แดง: HDP 1 : 100", isValid: true },
+                blue: { a: 180, b: 1, raw: "🔵 น้ำเงิน: 180 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":100,"isValid":true,"raw":"🔴 แดง: HDP 1 : 100"},"blue":{"a":180,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 180 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 180, resolvedB: 1,
+                fav: "blue", a: 180, b: 1
+            }
+        ]
+    },
+
+        {
+        fightId: "fight_20260827_211702",
+        recordedAt: 1787833022024,
+        settledAt:  1787834605042,
+        fighters: { red: "Thung O Noi Bunlanna Muaythai", blue: "Yotharit Thep Phakin" },
+        initialFav: "red",
+        initialOdds: { a: 2, b: 1 },
+        winner: "blue",
+        journey: [
+            {
+                step: 0, offsetMs: 97, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 1, offsetMs: 45093, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 2, offsetMs: 82846, src: "auto_sync",
+                red:  { a: 7, b: 4, raw: "🔴 แดง: HDP 7 : 4", isValid: true },
+                blue: { a: 2, b: 3, raw: "🔵 น้ำเงิน: 2 : 3 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 7 : 4"},"blue":{"a":2,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 3 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 4,
+                fav: "red", a: 7, b: 4
+            },
+            {
+                step: 3, offsetMs: 116380, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 4, offsetMs: 147881, src: "auto_sync",
+                red:  { a: 4, b: 1, raw: "🔴 แดง: HDP 4 : 1", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 4 : 1"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 4, resolvedB: 1,
+                fav: "red", a: 4, b: 1
+            },
+            {
+                step: 5, offsetMs: 237598, src: "auto_sync",
+                red:  { a: 7, b: 2, raw: "🔴 แดง: HDP 7 : 2", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":7,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 7 : 2"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 7, resolvedB: 2,
+                fav: "red", a: 7, b: 2
+            },
+            {
+                step: 6, offsetMs: 251845, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 3 : 1"},"blue":{"a":1,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 2 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 7, offsetMs: 355597, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 8, offsetMs: 373349, src: "auto_sync",
+                red:  { a: 5, b: 4, raw: "🔴 แดง: HDP 5 : 4", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 5 : 4"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 4,
+                fav: "red", a: 5, b: 4
+            },
+            {
+                step: 9, offsetMs: 391598, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 4, b: 5, raw: "🔵 น้ำเงิน: 4 : 5 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":4,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 10, offsetMs: 422382, src: "auto_sync",
+                red:  { a: 11, b: 8, raw: "🔴 แดง: HDP 11 : 8", isValid: true },
+                blue: { a: 9, b: 10, raw: "🔵 น้ำเงิน: 9 : 10 HDP", isValid: true },
+                v2: {"red":{"a":11,"b":8,"isValid":true,"raw":"🔴 แดง: HDP 11 : 8"},"blue":{"a":9,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 9 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 11, resolvedB: 8,
+                fav: "red", a: 11, b: 8
+            },
+            {
+                step: 11, offsetMs: 451108, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":5,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 4 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 12, offsetMs: 491602, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 4, b: 5, raw: "🔵 น้ำเงิน: 4 : 5 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":4,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 13, offsetMs: 545595, src: "auto_sync",
+                red:  { a: 11, b: 8, raw: "🔴 แดง: HDP 11 : 8", isValid: true },
+                blue: { a: 9, b: 10, raw: "🔵 น้ำเงิน: 9 : 10 HDP", isValid: true },
+                v2: {"red":{"a":11,"b":8,"isValid":true,"raw":"🔴 แดง: HDP 11 : 8"},"blue":{"a":9,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 9 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 11, resolvedB: 8,
+                fav: "red", a: 11, b: 8
+            },
+            {
+                step: 14, offsetMs: 565599, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 4, b: 5, raw: "🔵 น้ำเงิน: 4 : 5 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":4,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 15, offsetMs: 625355, src: "auto_sync",
+                red:  { a: 11, b: 8, raw: "🔴 แดง: HDP 11 : 8", isValid: true },
+                blue: { a: 9, b: 10, raw: "🔵 น้ำเงิน: 9 : 10 HDP", isValid: true },
+                v2: {"red":{"a":11,"b":8,"isValid":true,"raw":"🔴 แดง: HDP 11 : 8"},"blue":{"a":9,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 9 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 11, resolvedB: 8,
+                fav: "red", a: 11, b: 8
+            },
+            {
+                step: 16, offsetMs: 673354, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 4, b: 5, raw: "🔵 น้ำเงิน: 4 : 5 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":4,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 17, offsetMs: 686605, src: "auto_sync",
+                red:  { a: 10, b: 9, raw: "🔴 แดง: HDP 10 : 9", isValid: true },
+                blue: { a: 10, b: 9, raw: "🔵 น้ำเงิน: 10 : 9 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":9,"isValid":true,"raw":"🔴 แดง: HDP 10 : 9"},"blue":{"a":10,"b":9,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 9 HDP"},"derived":{"redStatus":"fav","blueStatus":"fav","marketState":"BOTH_FAV"}},
+                resolvedFav: "red", resolvedA: 10, resolvedB: 9,
+                fav: "red", a: 10, b: 9
+            },
+            {
+                step: 18, offsetMs: 698853, src: "auto_sync",
+                red:  { a: 3, b: 2, raw: "🔴 แดง: HDP 3 : 2", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 3 : 2"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 2,
+                fav: "red", a: 3, b: 2
+            },
+            {
+                step: 19, offsetMs: 730124, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":5,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 4 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 20, offsetMs: 746855, src: "auto_sync",
+                red:  { a: 8, b: 11, raw: "🔴 แดง: HDP 8 : 11", isValid: true },
+                blue: { a: 5, b: 3, raw: "🔵 น้ำเงิน: 5 : 3 HDP", isValid: true },
+                v2: {"red":{"a":8,"b":11,"isValid":true,"raw":"🔴 แดง: HDP 8 : 11"},"blue":{"a":5,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 3 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 3,
+                fav: "blue", a: 5, b: 3
+            },
+            {
+                step: 21, offsetMs: 769350, src: "auto_sync",
+                red:  { a: 2, b: 3, raw: "🔴 แดง: HDP 2 : 3", isValid: true },
+                blue: { a: 7, b: 4, raw: "🔵 น้ำเงิน: 7 : 4 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":3,"isValid":true,"raw":"🔴 แดง: HDP 2 : 3"},"blue":{"a":7,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 7 : 4 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 7, resolvedB: 4,
+                fav: "blue", a: 7, b: 4
+            },
+            {
+                step: 22, offsetMs: 797357, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 23, offsetMs: 825351, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 3, b: 5, raw: "🔵 น้ำเงิน: 3 : 5 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":3,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 24, offsetMs: 888868, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 5, b: 4, raw: "🔵 น้ำเงิน: 5 : 4 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":5,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 4 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 4,
+                fav: "blue", a: 5, b: 4
+            },
+            {
+                step: 25, offsetMs: 908853, src: "auto_sync",
+                red:  { a: 4, b: 5, raw: "🔴 แดง: HDP 4 : 5", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":5,"isValid":true,"raw":"🔴 แดง: HDP 4 : 5"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 26, offsetMs: 936090, src: "auto_sync",
+                red:  { a: 8, b: 11, raw: "🔴 แดง: HDP 8 : 11", isValid: true },
+                blue: { a: 5, b: 3, raw: "🔵 น้ำเงิน: 5 : 3 HDP", isValid: true },
+                v2: {"red":{"a":8,"b":11,"isValid":true,"raw":"🔴 แดง: HDP 8 : 11"},"blue":{"a":5,"b":3,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 3 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 3,
+                fav: "blue", a: 5, b: 3
+            },
+            {
+                step: 27, offsetMs: 970090, src: "auto_sync",
+                red:  { a: 4, b: 5, raw: "🔴 แดง: HDP 4 : 5", isValid: true },
+                blue: { a: 3, b: 2, raw: "🔵 น้ำเงิน: 3 : 2 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":5,"isValid":true,"raw":"🔴 แดง: HDP 4 : 5"},"blue":{"a":3,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 2 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 2,
+                fav: "blue", a: 3, b: 2
+            },
+            {
+                step: 28, offsetMs: 996354, src: "auto_sync",
+                red:  { a: 4, b: 7, raw: "🔴 แดง: HDP 4 : 7", isValid: true },
+                blue: { a: 5, b: 2, raw: "🔵 น้ำเงิน: 5 : 2 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":7,"isValid":true,"raw":"🔴 แดง: HDP 4 : 7"},"blue":{"a":5,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 5 : 2 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 5, resolvedB: 2,
+                fav: "blue", a: 5, b: 2
+            },
+            {
+                step: 29, offsetMs: 1035353, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 2, b: 1, raw: "🔵 น้ำเงิน: 2 : 1 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":2,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 1 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 2, resolvedB: 1,
+                fav: "blue", a: 2, b: 1
+            },
+            {
+                step: 30, offsetMs: 1069607, src: "auto_sync",
+                red:  { a: 5, b: 2, raw: "🔴 แดง: HDP 5 : 2", isValid: true },
+                blue: { a: 4, b: 7, raw: "🔵 น้ำเงิน: 4 : 7 HDP", isValid: true },
+                v2: {"red":{"a":5,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 5 : 2"},"blue":{"a":4,"b":7,"isValid":true,"raw":"🔵 น้ำเงิน: 4 : 7 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 5, resolvedB: 2,
+                fav: "red", a: 5, b: 2
+            },
+            {
+                step: 31, offsetMs: 1091105, src: "auto_sync",
+                red:  { a: 3, b: 1, raw: "🔴 แดง: HDP 3 : 1", isValid: true },
+                blue: { a: 1, b: 2, raw: "🔵 น้ำเงิน: 1 : 2 HDP", isValid: true },
+                v2: {"red":{"a":3,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 3 : 1"},"blue":{"a":1,"b":2,"isValid":true,"raw":"🔵 น้ำเงิน: 1 : 2 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 3, resolvedB: 1,
+                fav: "red", a: 3, b: 1
+            },
+            {
+                step: 32, offsetMs: 1102103, src: "auto_sync",
+                red:  { a: 2, b: 1, raw: "🔴 แดง: HDP 2 : 1", isValid: true },
+                blue: { a: 10, b: 10, raw: "🔵 น้ำเงิน: 10 : 10 HDP", isValid: true },
+                v2: {"red":{"a":2,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 2 : 1"},"blue":{"a":10,"b":10,"isValid":true,"raw":"🔵 น้ำเงิน: 10 : 10 HDP"},"derived":{"redStatus":"fav","blueStatus":"even","marketState":"RED_FAV_BLUE_EVEN"}},
+                resolvedFav: "red", resolvedA: 2, resolvedB: 1,
+                fav: "red", a: 2, b: 1
+            },
+            {
+                step: 33, offsetMs: 1118605, src: "auto_sync",
+                red:  { a: 4, b: 1, raw: "🔴 แดง: HDP 4 : 1", isValid: true },
+                blue: { a: 2, b: 5, raw: "🔵 น้ำเงิน: 2 : 5 HDP", isValid: true },
+                v2: {"red":{"a":4,"b":1,"isValid":true,"raw":"🔴 แดง: HDP 4 : 1"},"blue":{"a":2,"b":5,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 5 HDP"},"derived":{"redStatus":"fav","blueStatus":"dog","marketState":"RED_FAV_BLUE_DOG"}},
+                resolvedFav: "red", resolvedA: 4, resolvedB: 1,
+                fav: "red", a: 4, b: 1
+            },
+            {
+                step: 34, offsetMs: 1171105, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 7, b: 4, raw: "🔵 น้ำเงิน: 7 : 4 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":7,"b":4,"isValid":true,"raw":"🔵 น้ำเงิน: 7 : 4 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 7, resolvedB: 4,
+                fav: "blue", a: 7, b: 4
+            },
+            {
+                step: 35, offsetMs: 1198351, src: "auto_sync",
+                red:  { a: 1, b: 4, raw: "🔴 แดง: HDP 1 : 4", isValid: true },
+                blue: { a: 7, b: 1, raw: "🔵 น้ำเงิน: 7 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":4,"isValid":true,"raw":"🔴 แดง: HDP 1 : 4"},"blue":{"a":7,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 7 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 7, resolvedB: 1,
+                fav: "blue", a: 7, b: 1
+            },
+            {
+                step: 36, offsetMs: 1246105, src: "auto_sync",
+                red:  { a: 10, b: 10, raw: "🔴 แดง: HDP 10 : 10", isValid: true },
+                blue: { a: 2, b: 1, raw: "🔵 น้ำเงิน: 2 : 1 HDP", isValid: true },
+                v2: {"red":{"a":10,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 10 : 10"},"blue":{"a":2,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 2 : 1 HDP"},"derived":{"redStatus":"even","blueStatus":"fav","marketState":"RED_EVEN_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 2, resolvedB: 1,
+                fav: "blue", a: 2, b: 1
+            },
+            {
+                step: 37, offsetMs: 1264360, src: "auto_sync",
+                red:  { a: 1, b: 2, raw: "🔴 แดง: HDP 1 : 2", isValid: true },
+                blue: { a: 3, b: 1, raw: "🔵 น้ำเงิน: 3 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":2,"isValid":true,"raw":"🔴 แดง: HDP 1 : 2"},"blue":{"a":3,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 3 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 3, resolvedB: 1,
+                fav: "blue", a: 3, b: 1
+            },
+            {
+                step: 38, offsetMs: 1305858, src: "auto_sync",
+                red:  { a: 1, b: 10, raw: "🔴 แดง: HDP 1 : 10", isValid: true },
+                blue: { a: 16, b: 1, raw: "🔵 น้ำเงิน: 16 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":10,"isValid":true,"raw":"🔴 แดง: HDP 1 : 10"},"blue":{"a":16,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 16 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 16, resolvedB: 1,
+                fav: "blue", a: 16, b: 1
+            },
+            {
+                step: 39, offsetMs: 1391860, src: "auto_sync",
+                red:  { a: 1, b: 40, raw: "🔴 แดง: HDP 1 : 40", isValid: true },
+                blue: { a: 70, b: 1, raw: "🔵 น้ำเงิน: 70 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":40,"isValid":true,"raw":"🔴 แดง: HDP 1 : 40"},"blue":{"a":70,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 70 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 70, resolvedB: 1,
+                fav: "blue", a: 70, b: 1
+            },
+            {
+                step: 40, offsetMs: 1431107, src: "auto_sync",
+                red:  { a: 1, b: 30, raw: "🔴 แดง: HDP 1 : 30", isValid: true },
+                blue: { a: 50, b: 1, raw: "🔵 น้ำเงิน: 50 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":30,"isValid":true,"raw":"🔴 แดง: HDP 1 : 30"},"blue":{"a":50,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 50 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 50, resolvedB: 1,
+                fav: "blue", a: 50, b: 1
+            },
+            {
+                step: 41, offsetMs: 1456356, src: "auto_sync",
+                red:  { a: 1, b: 60, raw: "🔴 แดง: HDP 1 : 60", isValid: true },
+                blue: { a: 100, b: 1, raw: "🔵 น้ำเงิน: 100 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":60,"isValid":true,"raw":"🔴 แดง: HDP 1 : 60"},"blue":{"a":100,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 100 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 100, resolvedB: 1,
+                fav: "blue", a: 100, b: 1
+            },
+            {
+                step: 42, offsetMs: 1483107, src: "auto_sync",
+                red:  { a: 1, b: 80, raw: "🔴 แดง: HDP 1 : 80", isValid: true },
+                blue: { a: 130, b: 1, raw: "🔵 น้ำเงิน: 130 : 1 HDP", isValid: true },
+                v2: {"red":{"a":1,"b":80,"isValid":true,"raw":"🔴 แดง: HDP 1 : 80"},"blue":{"a":130,"b":1,"isValid":true,"raw":"🔵 น้ำเงิน: 130 : 1 HDP"},"derived":{"redStatus":"dog","blueStatus":"fav","marketState":"RED_DOG_BLUE_FAV"}},
+                resolvedFav: "blue", resolvedA: 130, resolvedB: 1,
+                fav: "blue", a: 130, b: 1
+            }
+        ]
+    },
+
 ];
 
 //วางข้อมูลการชกก่อนหน้านี้เพื่อให้ระบบสามารถประมวลผลได้
