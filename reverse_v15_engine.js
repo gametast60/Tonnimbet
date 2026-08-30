@@ -134,16 +134,18 @@
   }
 
   /**
-   * calculateHedge(originalOdds, hedgeOdds, config)
+   * calculateHedge(entryOdds, entryStake, hedgeOdds, config)
+   * BUG 1 FIX: Uses original entry odds (entryOdds) and original entry stake (entryStake).
+   * Hedge ticket uses current opposite odds (hedgeOdds) at current tick.
+   *
    * MIN mode: find smallest hedge H such that minFinal >= hedgeTarget - roundTolerance
    * EQUAL mode: equalise both outcomes
    */
-  function calculateHedge(originalOdds, hedgeOdds, config) {
-    const stake = config.stake;
+  function calculateHedge(entryOdds, entryStake, hedgeOdds, config) {
+    const stake = parseFloat(entryStake) || (config && config.stake) || 1000;
     const { hedgeMode, hedgeTarget, hedgeRounding, maxHedgeMultiple, roundTolerance } = config;
 
-    const origSide = deriveSide(originalOdds.a, originalOdds.b);
-    const origAmts = ticketAmounts(originalOdds, stake);
+    const origAmts = ticketAmounts(entryOdds, stake);
     const entryWinProfit  =  origAmts.win;   // entry side wins
     const entryLossProfit = -origAmts.risk;  // entry side loses
 
@@ -154,18 +156,14 @@
     let hedgeStake;
 
     if (hedgeMode === 'min') {
-      // Need: entryLossProfit + hedgeWin >= hedgeTarget - roundTolerance
       if (hedgeSide === 'fav') {
-        // hedgeWin = H (fav stake = win amount)
         const floor = (hedgeTarget - roundTolerance) - entryLossProfit;
         hedgeStake = Math.max(0, floor);
       } else {
-        // hedgeWin = H * hedgeRatioVal
         const floor = ((hedgeTarget - roundTolerance) - entryLossProfit) / hedgeRatioVal;
         hedgeStake = Math.max(0, floor);
       }
     } else {
-      // 'equal' mode
       if (hedgeSide === 'fav') {
         hedgeStake = (entryWinProfit - entryLossProfit) / (hedgeRatioVal + 1);
       } else {
@@ -254,7 +252,10 @@
       hedgePreview:  state.hedgePreview || null,
     };
 
-    // ARM check
+    let decision = 'WAIT';
+    let justArmedThisTick = false;
+
+    // ARM check (only if not already armed)
     if (!newState.armed) {
       const armResult = shouldArm({
         adverseCount: newAdverseCount,
@@ -264,43 +265,63 @@
         currentRatio: curRatio
       }, cfg);
       if (armResult) {
-        newState.armed    = true;
-        newState.armIndex = newFlags.length - 1;
-        newState.armAge   = 0;
-        newState.phase    = 'ARMED';
+        newState.armed           = true;
+        newState.armIndex        = newFlags.length - 1;
+        newState.armAge          = 0;
+        newState.phase           = 'ARMED';
+        justArmedThisTick        = true;
+        decision                 = 'WAIT'; // BUG 2 FIX: ARM tick = ARMED, decision = WAIT (do not evaluate hedge window on ARM tick)
       }
     } else {
+      // Already armed in a previous tick -> advance armAge
       newState.armAge = (state.armAge || 0) + 1;
       if (newState.armAge > cfg.armExpiryTicks) {
         newState.phase = 'EXPIRED';
         newState.armed = false;
         newState.debugInfo = {
+          entryOdds: `${state.entryOdds.a}:${state.entryOdds.b}`,
+          currentOdds: `${currentOdds.a}:${currentOdds.b}`,
+          entryStake: state.entryStake,
+          currentHedgeOdds: hedgeOdds ? `${hedgeOdds.a}:${hedgeOdds.b}` : '-',
+          armTick: newState.armIndex,
+          currentTick: newFlags.length - 1,
+          ticksSinceArm: newState.armAge,
           ratio: curRatio, previousRatio: prevRatio, adverse,
           adverseCount: newAdverseCount, adverseShare: parseFloat(adverseShare.toFixed(3)),
-          streak, phase: 'EXPIRED', decision: 'EXPIRED_ARM'
+          streak, state: 'EXPIRED', hedgeStake: null, worstCase: null, decision: 'EXPIRED_ARM'
         };
         return newState;
       }
     }
 
-    // Hedge Window check (only when ARMED and hedge odds available)
+    // Hedge Window check — BUG 2 FIX: Must wait at least 1 tick after ARM before evaluating Hedge Window
     let hedgePreview = null;
-    let decision = 'ACCUMULATING';
 
-    if (newState.armed && hedgeOdds) {
-      hedgePreview = calculateHedge(currentOdds, hedgeOdds, cfg);
+    if (newState.armed && !justArmedThisTick && hedgeOdds) {
+      // BUG 1 FIX: Pass state.entryOdds and state.entryStake
+      hedgePreview = calculateHedge(newState.entryOdds, newState.entryStake, hedgeOdds, cfg);
       newState.hedgePreview = hedgePreview;
       if (hedgePreview.accepted) {
         newState.phase = 'REVERSE_READY';
-        decision = 'REVERSE_READY';
+        decision = 'REVERSE';
       } else {
         decision = 'ARMED_WAITING';
       }
-    } else if (newState.armed) {
+    } else if (newState.armed && !justArmedThisTick) {
       decision = 'ARMED_NO_HEDGE_ODDS';
+    } else if (!newState.armed) {
+      decision = 'ACCUMULATING';
     }
 
+    // Debug Info (meets all prompt requirements)
     newState.debugInfo = {
+      entryOdds: `${state.entryOdds.a}:${state.entryOdds.b}`,
+      currentOdds: `${currentOdds.a}:${currentOdds.b}`,
+      entryStake: state.entryStake,
+      currentHedgeOdds: hedgeOdds ? `${hedgeOdds.a}:${hedgeOdds.b}` : '-',
+      armTick: newState.armIndex !== null ? newState.armIndex : null,
+      currentTick: newFlags.length - 1,
+      ticksSinceArm: newState.armed ? newState.armAge : 0,
       ratio: curRatio,
       previousRatio: prevRatio,
       adverse,
@@ -308,7 +329,7 @@
       pressureWindow: cfg.pressureWindow,
       adverseShare: parseFloat(adverseShare.toFixed(3)),
       streak,
-      phase: newState.phase,
+      state: newState.phase,
       hedgeStake:  hedgePreview ? hedgePreview.hedge    : null,
       worstCase:   hedgePreview ? hedgePreview.minFinal : null,
       decision
