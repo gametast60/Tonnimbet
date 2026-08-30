@@ -1305,18 +1305,34 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
     const btnEqual = document.getElementById('btnEqual');
     const btnBreakeven = document.getElementById('btnBreakeven');
     const btnSmartCut = document.getElementById('btnSmartCut');
+    const btnReverseV15 = document.getElementById('btnReverseV15'); // 🆕
 
     if (!btnSkew || !btnEqual || !btnBreakeven || !btnSmartCut) return;
 
     const updateReadyCountBadge = (count) => {
         const badge = document.getElementById('strategyReadyBadge');
         if (!badge) return;
-        if (count > 0) {
+
+        let v15Text = '';
+        if (reverseV15State) {
+            const v15Map = {
+                WAIT: '⏳ WAIT',
+                ARMED: '🟡 ARMED',
+                REVERSE_READY: '🟢 REVERSE READY',
+                REVERSED: '✅ REVERSED',
+                EXPIRED: '⚪ EXPIRED'
+            };
+            v15Text = ` | 🔄 V15: ${v15Map[reverseV15State.phase] || reverseV15State.phase}`;
+        } else {
+            v15Text = ` | 🔄 V15: ⏳ รอไม้แรก`;
+        }
+
+        if (count > 0 || (reverseV15State && reverseV15State.phase === 'REVERSE_READY')) {
             badge.className = 'strat-ready-count-badge active';
-            badge.innerHTML = `⚡ เข้าเป้า <strong>${count}</strong> กลยุทธ์`;
+            badge.innerHTML = `⚡ <strong>${count}</strong>/4 เดิมพร้อม${v15Text}`;
         } else {
             badge.className = 'strat-ready-count-badge idle';
-            badge.innerHTML = `⏳ 0 กลยุทธ์`;
+            badge.innerHTML = `⚡ <strong>${count}</strong>/4 เดิม${v15Text}`;
         }
     };
 
@@ -1325,6 +1341,7 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         btnEqual.classList.remove('ready-equal');
         btnBreakeven.classList.remove('ready-breakeven');
         btnSmartCut.classList.remove('ready-smart-cut');
+        if (btnReverseV15) btnReverseV15.classList.remove('ready-reverse-v15');
         updateReadyCountBadge(0);
         // 🆕 ซ่อน dot fallback ด้วยเมื่อ clear
         const dotElClear = document.getElementById('fallbackReadyDot');
@@ -1332,6 +1349,9 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         const fallbackBtnElClear = document.getElementById('btnForcedFallback');
         if (fallbackBtnElClear) fallbackBtnElClear.classList.remove('siren');
     };
+
+    const isV15Ready = !!(reverseV15State && reverseV15State.phase === 'REVERSE_READY');
+    if (btnReverseV15) btnReverseV15.classList.toggle('ready-reverse-v15', isV15Ready);
 
     if (!leadingCorner || leadingProfit === laggingProfit || !targetRatio || targetRatio <= 0) {
         clearReadyClasses();
@@ -1701,11 +1721,21 @@ function calculateActionAndAdvisor(netRed, netBlue) {
         const plan = window._lastV15Plan || null;
         const hedgePreview = plan && plan.hedgePreview;
         const targetC = reverseV15State ? (reverseV15State.entryCorner === 'red' ? 'blue' : 'red') : (leadingCorner === 'red' ? 'blue' : 'red');
+
+        let finalRedProf = netRed;
+        let finalBlueProf = netBlue;
+        if (reverseV15State && reverseV15State.hedgePreview) {
+            const h = reverseV15State.hedgePreview;
+            const entryCorner = reverseV15State.entryCorner;
+            finalRedProf = entryCorner === 'red' ? h.finalIfEntryWins : h.finalIfEntryLoses;
+            finalBlueProf = entryCorner === 'blue' ? h.finalIfEntryWins : h.finalIfEntryLoses;
+        }
+
         hedgeResult = {
             hedgeStake: hedgePreview ? hedgePreview.hedge : 0,
             targetCorner: targetC,
-            finalRedProf: 0,
-            finalBlueProf: 0,
+            finalRedProf: Math.round(finalRedProf),
+            finalBlueProf: Math.round(finalBlueProf),
             isReady: !!(plan && plan.phase === 'REVERSE_READY'),
             isReverseV15: true
         };
@@ -1771,9 +1801,13 @@ function calculateActionAndAdvisor(netRed, netBlue) {
     // 🆕 อัปเดตหัว action card ตามกลยุทธ์ที่เลือก
     const actionTitleEl = document.getElementById('actionTitleText');
     if (actionTitleEl) {
-        actionTitleEl.textContent = currentStrategy === 'forced_fallback'
-            ? '🆘 Forced-Exit Fallback (อ้างอิง ไม่ใช่เป้าหมาย):'
-            : '👉 สถานะการออกตัว:';
+        if (currentStrategy === 'reverse_v15') {
+            actionTitleEl.textContent = '🔄 Hedge Window Reverse:';
+        } else if (currentStrategy === 'forced_fallback') {
+            actionTitleEl.textContent = '🆘 Forced-Exit Fallback (อ้างอิง ไม่ใช่เป้าหมาย):';
+        } else {
+            actionTitleEl.textContent = '👉 สถานะการออกตัว:';
+        }
     }
 
     if (isReady) {
@@ -1786,7 +1820,9 @@ function calculateActionAndAdvisor(netRed, netBlue) {
 
         if (statusBadge) {
             let stratStatusText = '';
-            if (currentStrategy === 'skew_runner') {
+            if (currentStrategy === 'reverse_v15') {
+                stratStatusText = '🟢 REVERSE READY (พร้อม Reverse)';
+            } else if (currentStrategy === 'skew_runner') {
                 const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
                 stratStatusText = '🔥 รันกำไร 70/30 (' + skewSideLabel + ')';
             } else if (currentStrategy === 'equal') {
@@ -1832,7 +1868,9 @@ function calculateActionAndAdvisor(netRed, netBlue) {
                 btnOneClickHedge.disabled = false;
                 btnOneClickHedge.className = 'btn-one-click-hedge ready pulse-ready';
                 let stratLabel;
-                if (currentStrategy === 'skew_runner') {
+                if (currentStrategy === 'reverse_v15') {
+                    stratLabel = 'Reverse';
+                } else if (currentStrategy === 'skew_runner') {
                     const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : (skewTarget70 === 'blue' ? '🔵 น้ำเงิน' : '');
                     stratLabel = 'รันกำไร 70/30' + (skewSideLabel ? ' (' + skewSideLabel + ')' : '');
                 } else if (currentStrategy === 'breakeven') {
@@ -1859,22 +1897,99 @@ function calculateActionAndAdvisor(netRed, netBlue) {
 
     } else {
 
-        if (actionCard) actionCard.className = 'action-card wait';
-        if (statusBadge) {
-            statusBadge.innerText = '⏳ ยังไม่อยู่ในจุดออกตัว';
-            statusBadge.style.color = 'var(--red-side)';
-        }
-        if (actionSideEl) actionSideEl.innerText = '⚠️ ควรรอราคา! (ถ้ารีบออกตอนนี้จะเสียเปรียบ)';
-        if (actionStakeEl) {
-            actionStakeEl.innerText = 'อย่าเพิ่งกด';
-            actionStakeEl.className = 'stake-badge wait';
-            actionStakeEl.onclick = null;
-        }
+        if (currentStrategy === 'reverse_v15') {
+            const phase = reverseV15State ? reverseV15State.phase : 'WAIT';
+            const adv = reverseV15State ? reverseV15State.adverseCount : 0;
+            const maxAdv = typeof ReverseV15Engine !== 'undefined' ? ReverseV15Engine.REVERSE_V15_CONFIG.adverseCountToArm : 4;
 
-        if (btnOneClickHedge) {
-            btnOneClickHedge.disabled = true;
-            btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-            btnOneClickHedge.innerHTML = '<span>⏳ ควรรอราคาเข้าเป้า</span>';
+            if (phase === 'WAIT') {
+                if (actionCard) actionCard.className = 'action-card wait';
+                if (statusBadge) {
+                    statusBadge.innerText = '⏳ WAIT (ยังไม่ ARM)';
+                    statusBadge.style.color = 'var(--yellow)';
+                }
+                if (actionSideEl) actionSideEl.innerText = '⚠️ กำลังสะสม Adverse Ticks (' + adv + '/' + maxAdv + ')';
+                if (actionStakeEl) {
+                    actionStakeEl.innerText = 'อย่าเพิ่งกด';
+                    actionStakeEl.className = 'stake-badge wait';
+                    actionStakeEl.onclick = null;
+                }
+                if (btnOneClickHedge) {
+                    btnOneClickHedge.disabled = true;
+                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
+                    btnOneClickHedge.innerHTML = '<span>⏳ ยังไม่ ARM (Adverse ' + adv + '/' + maxAdv + ')</span>';
+                }
+            } else if (phase === 'ARMED') {
+                if (actionCard) actionCard.className = 'action-card wait';
+                const wc = (reverseV15State && reverseV15State.hedgePreview) ? Math.round(reverseV15State.hedgePreview.minFinal) : '-';
+                if (statusBadge) {
+                    statusBadge.innerText = '🟡 ARMED (รอ Hedge Window)';
+                    statusBadge.style.color = 'var(--yellow)';
+                }
+                if (actionSideEl) actionSideEl.innerText = '🟡 ARM แล้ว — รอราคาเข้า Hedge Window (Worst Case ' + wc + ' B)';
+                if (actionStakeEl) {
+                    actionStakeEl.innerText = 'อย่าเพิ่งกด';
+                    actionStakeEl.className = 'stake-badge wait';
+                    actionStakeEl.onclick = null;
+                }
+                if (btnOneClickHedge) {
+                    btnOneClickHedge.disabled = true;
+                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
+                    btnOneClickHedge.innerHTML = '<span>🟡 ARMED — รอ Hedge Window (Worst Case ' + wc + ' B)</span>';
+                }
+            } else if (phase === 'REVERSED') {
+                if (actionCard) actionCard.className = 'action-card neutral';
+                if (statusBadge) {
+                    statusBadge.innerText = '✅ REVERSED';
+                    statusBadge.style.color = 'var(--green)';
+                }
+                if (actionSideEl) actionSideEl.innerText = '✅ Reverse เรียบร้อยแล้ว (ทำการ Hedge แล้ว)';
+                if (actionStakeEl) {
+                    actionStakeEl.innerText = 'เรียบร้อย';
+                    actionStakeEl.className = 'stake-badge';
+                    actionStakeEl.onclick = null;
+                }
+                if (btnOneClickHedge) {
+                    btnOneClickHedge.disabled = true;
+                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
+                    btnOneClickHedge.innerHTML = '<span>🔒 Reverse เรียบร้อยแล้ว</span>';
+                }
+            } else if (phase === 'EXPIRED') {
+                if (actionCard) actionCard.className = 'action-card neutral';
+                if (statusBadge) {
+                    statusBadge.innerText = '⚪ EXPIRED';
+                    statusBadge.style.color = 'var(--text-muted)';
+                }
+                if (actionSideEl) actionSideEl.innerText = '⚪ ARM หมดอายุ (ราคาไม่ผ่าน Hedge Window ภายในเวลาที่กำหนด)';
+                if (actionStakeEl) {
+                    actionStakeEl.innerText = 'หมดเวลา';
+                    actionStakeEl.className = 'stake-badge wait';
+                    actionStakeEl.onclick = null;
+                }
+                if (btnOneClickHedge) {
+                    btnOneClickHedge.disabled = true;
+                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
+                    btnOneClickHedge.innerHTML = '<span>⚪ ARM หมดอายุแล้ว</span>';
+                }
+            }
+        } else {
+            if (actionCard) actionCard.className = 'action-card wait';
+            if (statusBadge) {
+                statusBadge.innerText = '⏳ ยังไม่อยู่ในจุดออกตัว';
+                statusBadge.style.color = 'var(--red-side)';
+            }
+            if (actionSideEl) actionSideEl.innerText = '⚠️ ควรรอราคา! (ถ้ารีบออกตอนนี้จะเสียเปรียบ)';
+            if (actionStakeEl) {
+                actionStakeEl.innerText = 'อย่าเพิ่งกด';
+                actionStakeEl.className = 'stake-badge wait';
+                actionStakeEl.onclick = null;
+            }
+
+            if (btnOneClickHedge) {
+                btnOneClickHedge.disabled = true;
+                btnOneClickHedge.className = 'btn-one-click-hedge disabled';
+                btnOneClickHedge.innerHTML = '<span>⏳ ควรรอราคาเข้าเป้า</span>';
+            }
         }
     }
 

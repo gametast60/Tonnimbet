@@ -1421,6 +1421,22 @@ input[type="number"]::-webkit-inner-spin-button {
     box-shadow: 0 0 0 2px #ffffff, 0 0 18px rgba(59, 130, 246, 0.9) !important;
 }
 
+/* 5. Reverse Engine V15: ธีมสีม่วงสว่างพร้อม Reverse (Vibrant Purple/Violet Theme) */
+.btn-strat.ready-reverse-v15 {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+    border: 1.5px solid #a78bfa !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(124, 58, 237, 0.6) !important;
+    font-weight: 700;
+}
+.btn-strat.ready-reverse-v15:hover {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+    border-color: #c4b5fd !important;
+}
+.btn-strat.active.ready-reverse-v15 {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 18px rgba(139, 92, 246, 0.9) !important;
+}
+
 /* ==========================================
    🆕 ปุ่ม Forced-Exit Fallback (ทางออกสำรอง)
    ========================================== */
