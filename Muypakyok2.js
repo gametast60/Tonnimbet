@@ -1317,28 +1317,38 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
     // 🆕 Reverse Engine V15 — รันการคำนวณและอัปเดตไฟสถานะ V15 ที่จุดเริ่มต้นทันที (อิสระ ไม่ถูกบล็อคโดย early return ของ 4 กลยุทธ์เดิม)
     if (reverseV15State && !reverseV15State.reversed && typeof ReverseV15Engine !== 'undefined') {
         const cfg = ReverseV15Engine.REVERSE_V15_CONFIG;
-        const entryCorner = reverseV15State.entryCorner;
-        const hedgeCorner = entryCorner === 'red' ? 'blue' : 'red';
-        const curEntryOdds = currentPrice[entryCorner];
-        const curHedgeOdds = currentPrice[hedgeCorner];
 
-        if (isOddsValid(curEntryOdds)) {
-            const curEntryKey = `${curEntryOdds.a}:${curEntryOdds.b}`;
-            const curHedgeKey = isOddsValid(curHedgeOdds) ? `${curHedgeOdds.a}:${curHedgeOdds.b}` : '-';
-            const currentOddsKey = `${curEntryKey}|${curHedgeKey}`;
+        // 🔑 1. เช็คพอร์ตจริงก่อนเสมอ — ไม่ว่าจะมองอยู่หน้ากลยุทธ์ไหน หรือกดจากกลยุทธ์ไหนก็ตาม
+        // ถ้าพอร์ตเปิดตั๋วมากกว่า 1 ไม้ (tickets.length > 1) และผลตอบแทนฝั่งที่แย่ที่สุดในพอร์ตปลอดภัยแล้ว (laggingProfit >= -roundTolerance)
+        // แปลว่าพอร์ตถูก Hedge เรียบร้อยแล้ว ต้องล็อค reverseV15State.reversed = true และ phase = 'REVERSED' ทันที!
+        if (tickets.length > 1 && laggingProfit >= -cfg.roundTolerance) {
+            reverseV15State.reversed = true;
+            reverseV15State.phase = 'REVERSED';
+            window._lastV15Plan = reverseV15State;
+        } else {
+            const entryCorner = reverseV15State.entryCorner;
+            const hedgeCorner = entryCorner === 'red' ? 'blue' : 'red';
+            const curEntryOdds = currentPrice[entryCorner];
+            const curHedgeOdds = currentPrice[hedgeCorner];
 
-            // 🔑 เช็คราคาเดิมไหม: ถ้าเป็นราคา tick เดิมที่เคยประเมินแล้ว ไม่รัน stepReverseV15 ซ้ำ
-            if (reverseV15State._lastStepOddsKey !== currentOddsKey) {
-                const stepResult = ReverseV15Engine.stepReverseV15(
-                    reverseV15State,
-                    { a: curEntryOdds.a, b: curEntryOdds.b },
-                    isOddsValid(curHedgeOdds) ? { a: curHedgeOdds.a, b: curHedgeOdds.b } : null,
-                    cfg
-                );
-                stepResult._lastStepOddsKey = currentOddsKey;
-                reverseV15State = stepResult; // state ใหม่ (immutable update)
-                window._lastV15Plan = stepResult;
-                if (reverseV15Debug) window._lastV15Debug = stepResult.debugInfo;
+            if (isOddsValid(curEntryOdds)) {
+                const curEntryKey = `${curEntryOdds.a}:${curEntryOdds.b}`;
+                const curHedgeKey = isOddsValid(curHedgeOdds) ? `${curHedgeOdds.a}:${curHedgeOdds.b}` : '-';
+                const currentOddsKey = `${curEntryKey}|${curHedgeKey}`;
+
+                // 🔑 เช็คราคาเดิมไหม: ถ้าเป็นราคา tick เดิมที่เคยประเมินแล้ว ไม่รัน stepReverseV15 ซ้ำ
+                if (reverseV15State._lastStepOddsKey !== currentOddsKey) {
+                    const stepResult = ReverseV15Engine.stepReverseV15(
+                        reverseV15State,
+                        { a: curEntryOdds.a, b: curEntryOdds.b },
+                        isOddsValid(curHedgeOdds) ? { a: curHedgeOdds.a, b: curHedgeOdds.b } : null,
+                        cfg
+                    );
+                    stepResult._lastStepOddsKey = currentOddsKey;
+                    reverseV15State = stepResult; // state ใหม่ (immutable update)
+                    window._lastV15Plan = stepResult;
+                    if (reverseV15Debug) window._lastV15Debug = stepResult.debugInfo;
+                }
             }
         }
 
@@ -1687,7 +1697,9 @@ function calculateActionAndAdvisor(netRed, netBlue) {
         return;
     }
 
-    if (leadingProfit === laggingProfit) {
+    const isV15Locked = (currentStrategy === 'reverse_v15' && reverseV15State && reverseV15State.reversed === true);
+
+    if (leadingProfit === laggingProfit || isV15Locked) {
         updateStrategyButtonsReadiness(null, 0, 0, false, 0);
         if (actionCard) actionCard.className = "action-card neutral";
         if (actionSideEl) actionSideEl.innerText = "พอร์ตสมดุลแล้ว (ไร้ความเสี่ยง / ชนะทั้ง 2 ทาง)";
