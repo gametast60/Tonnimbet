@@ -652,13 +652,17 @@
             listEl.innerHTML = `<div class="studio-lib-empty">ไม่พบไฟท์ที่ตรงกับคำค้นหา</div>`;
             return;
         }
-        listEl.innerHTML = filtered.map(({f, idx}) => {
-            const winLabel = f.winner === 'red' ? '🔴 แดงชนะ' : '🔵 น้ำเงินชนะ';
+        listEl.innerHTML = filtered.map(({f, idx}, displayIdx) => {
             const isSel = (idx === _player.scenarioIdx && _player.loaded);
+            const displayNum = displayIdx + 1;
             return `<div class="studio-lib-row ${isSel ? 'selected' : ''}" onclick="btHistLoadScenario(${idx})">
-                <span class="studio-lib-fighters">${f.fighters?.red || '-'}<span class="vs">vs</span>${f.fighters?.blue || '-'}</span>
-                <span class="studio-win-chip ${f.winner}">${winLabel}</span>
-                <button class="studio-lib-action" title="โหลดเข้า Backtest" onclick="event.stopPropagation(); btHistLoadScenario(${idx})">▶️</button>
+                <div class="studio-lib-num">${displayNum}</div>
+                <div class="studio-lib-content">
+                    <div class="studio-lib-fight-id">ID: ${f.fightId || '-'}</div>
+                    <div class="studio-lib-fighter-name">${f.fighters?.red || '-'}</div>
+                    <div class="studio-lib-vs">VS</div>
+                    <div class="studio-lib-fighter-name">${f.fighters?.blue || '-'}</div>
+                </div>
             </div>`;
         }).join('');
     }

@@ -626,15 +626,20 @@ function executeOneClickHedge() {
         betInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-    if (typeof qbTriggerAutoBet === 'function') {
-        qbTriggerAutoBet(targetCorner, recommendedStake);
-    }
-
-    // 🆕 ถ้ากำลังยิงตอนเป็น reverse_v15 ให้ล็อค state ทันที ป้องกัน Reverse ซ้ำ
+    // 🆕 ถ้ากำลังยิงตอนเป็น reverse_v15 ให้ล็อค state เป็น REVERSED ทันทีตั้งแต่ก่อนยิงตั๋ว
     if (hedgeSnapshot.strategy === 'reverse_v15' && reverseV15State) {
         reverseV15State.reversed = true;
         reverseV15State.phase = 'REVERSED';
         window._lastV15Plan = reverseV15State;
+    }
+
+    if (typeof qbTriggerAutoBet === 'function') {
+        qbTriggerAutoBet(targetCorner, recommendedStake);
+    }
+
+    // 🆕 บังคับคำนวณและอัปเดต UI หน้าจอทันทีปุ่มจะได้ล็อค disabled ทันทีไม่ต้องสลับหน้าไปมา
+    if (typeof calculateAll === 'function') {
+        calculateAll();
     }
 }
 
@@ -1309,6 +1314,42 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
 
     if (!btnSkew || !btnEqual || !btnBreakeven || !btnSmartCut) return;
 
+    // 🆕 Reverse Engine V15 — รันการคำนวณและอัปเดตไฟสถานะ V15 ที่จุดเริ่มต้นทันที (อิสระ ไม่ถูกบล็อคโดย early return ของ 4 กลยุทธ์เดิม)
+    if (reverseV15State && !reverseV15State.reversed && typeof ReverseV15Engine !== 'undefined') {
+        const cfg = ReverseV15Engine.REVERSE_V15_CONFIG;
+        const entryCorner = reverseV15State.entryCorner;
+        const hedgeCorner = entryCorner === 'red' ? 'blue' : 'red';
+        const curEntryOdds = currentPrice[entryCorner];
+        const curHedgeOdds = currentPrice[hedgeCorner];
+
+        if (isOddsValid(curEntryOdds)) {
+            const curEntryKey = `${curEntryOdds.a}:${curEntryOdds.b}`;
+            const curHedgeKey = isOddsValid(curHedgeOdds) ? `${curHedgeOdds.a}:${curHedgeOdds.b}` : '-';
+            const currentOddsKey = `${curEntryKey}|${curHedgeKey}`;
+
+            // 🔑 เช็คราคาเดิมไหม: ถ้าเป็นราคา tick เดิมที่เคยประเมินแล้ว ไม่รัน stepReverseV15 ซ้ำ
+            if (reverseV15State._lastStepOddsKey !== currentOddsKey) {
+                const stepResult = ReverseV15Engine.stepReverseV15(
+                    reverseV15State,
+                    { a: curEntryOdds.a, b: curEntryOdds.b },
+                    isOddsValid(curHedgeOdds) ? { a: curHedgeOdds.a, b: curHedgeOdds.b } : null,
+                    cfg
+                );
+                stepResult._lastStepOddsKey = currentOddsKey;
+                reverseV15State = stepResult; // state ใหม่ (immutable update)
+                window._lastV15Plan = stepResult;
+                if (reverseV15Debug) window._lastV15Debug = stepResult.debugInfo;
+            }
+        }
+
+        if (currentStrategy === 'reverse_v15') {
+            renderReverseV15Panel(reverseV15State);
+        }
+    }
+
+    const isV15Ready = !!(reverseV15State && reverseV15State.phase === 'REVERSE_READY');
+    if (btnReverseV15) btnReverseV15.classList.toggle('ready-reverse-v15', isV15Ready);
+
     const updateReadyCountBadge = (count) => {
         const badge = document.getElementById('strategyReadyBadge');
         if (!badge) return;
@@ -1327,7 +1368,7 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
             v15Text = ` | 🔄 V15: ⏳ รอไม้แรก`;
         }
 
-        if (count > 0 || (reverseV15State && reverseV15State.phase === 'REVERSE_READY')) {
+        if (count > 0 || isV15Ready) {
             badge.className = 'strat-ready-count-badge active';
             badge.innerHTML = `⚡ <strong>${count}</strong>/4 เดิมพร้อม${v15Text}`;
         } else {
@@ -1341,7 +1382,7 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         btnEqual.classList.remove('ready-equal');
         btnBreakeven.classList.remove('ready-breakeven');
         btnSmartCut.classList.remove('ready-smart-cut');
-        if (btnReverseV15) btnReverseV15.classList.remove('ready-reverse-v15');
+        if (btnReverseV15) btnReverseV15.classList.toggle('ready-reverse-v15', isV15Ready);
         updateReadyCountBadge(0);
         // 🆕 ซ่อน dot fallback ด้วยเมื่อ clear
         const dotElClear = document.getElementById('fallbackReadyDot');
@@ -1349,9 +1390,6 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         const fallbackBtnElClear = document.getElementById('btnForcedFallback');
         if (fallbackBtnElClear) fallbackBtnElClear.classList.remove('siren');
     };
-
-    const isV15Ready = !!(reverseV15State && reverseV15State.phase === 'REVERSE_READY');
-    if (btnReverseV15) btnReverseV15.classList.toggle('ready-reverse-v15', isV15Ready);
 
     if (!leadingCorner || leadingProfit === laggingProfit || !targetRatio || targetRatio <= 0) {
         clearReadyClasses();
@@ -1479,31 +1517,6 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         const fallbackBtnEl = document.getElementById('btnForcedFallback');
         if (fallbackBtnEl) {
             fallbackBtnEl.classList.toggle('siren', _fbIsRecommended);
-        }
-
-        // 🆕 Reverse Engine V15 — คำนวณทุก tick โดยไม่ขึ้นกับว่า user กำลังดู tab ไหน
-        if (reverseV15State && !reverseV15State.reversed && typeof ReverseV15Engine !== 'undefined') {
-            const cfg = ReverseV15Engine.REVERSE_V15_CONFIG;
-            const entryCorner = reverseV15State.entryCorner;
-            const hedgeCorner = entryCorner === 'red' ? 'blue' : 'red';
-            const curEntryOdds = currentPrice[entryCorner];
-            const curHedgeOdds = currentPrice[hedgeCorner];
-
-            if (isOddsValid(curEntryOdds)) {
-                const stepResult = ReverseV15Engine.stepReverseV15(
-                    reverseV15State,
-                    { a: curEntryOdds.a, b: curEntryOdds.b },
-                    isOddsValid(curHedgeOdds) ? { a: curHedgeOdds.a, b: curHedgeOdds.b } : null,
-                    cfg
-                );
-                reverseV15State = stepResult; // state ใหม่ (immutable update)
-                window._lastV15Plan = stepResult;
-                if (reverseV15Debug) window._lastV15Debug = stepResult.debugInfo;
-            }
-
-            if (currentStrategy === 'reverse_v15') {
-                renderReverseV15Panel(reverseV15State);
-            }
         }
 
         // ——— ตรวจสอบ Auto-Hedge ที่นี่ ไม่ขึ้นกับว่าผู้ใช้อยู่แท็บไหน ———
@@ -1901,14 +1914,19 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             const phase = reverseV15State ? reverseV15State.phase : 'WAIT';
             const adv = reverseV15State ? reverseV15State.adverseCount : 0;
             const maxAdv = typeof ReverseV15Engine !== 'undefined' ? ReverseV15Engine.REVERSE_V15_CONFIG.adverseCountToArm : 4;
+            const cooldown = reverseV15State ? (reverseV15State.cooldownRemaining || 0) : 0;
 
             if (phase === 'WAIT') {
                 if (actionCard) actionCard.className = 'action-card wait';
                 if (statusBadge) {
-                    statusBadge.innerText = '⏳ WAIT (ยังไม่ ARM)';
+                    statusBadge.innerText = cooldown > 0 ? `⏳ WAIT (พัก Cooldown ${cooldown} Ticks)` : '⏳ WAIT (ยังไม่ ARM)';
                     statusBadge.style.color = 'var(--yellow)';
                 }
-                if (actionSideEl) actionSideEl.innerText = '⚠️ กำลังสะสม Adverse Ticks (' + adv + '/' + maxAdv + ')';
+                if (actionSideEl) {
+                    actionSideEl.innerText = cooldown > 0
+                        ? `⏳ พัก Cooldown ${cooldown} ticks ก่อนประเมิน ARM รอบใหม่`
+                        : `⚠️ กำลังสะสม Adverse Ticks (${adv}/${maxAdv})`;
+                }
                 if (actionStakeEl) {
                     actionStakeEl.innerText = 'อย่าเพิ่งกด';
                     actionStakeEl.className = 'stake-badge wait';
@@ -1917,16 +1935,16 @@ function calculateActionAndAdvisor(netRed, netBlue) {
                 if (btnOneClickHedge) {
                     btnOneClickHedge.disabled = true;
                     btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                    btnOneClickHedge.innerHTML = '<span>⏳ ยังไม่ ARM (Adverse ' + adv + '/' + maxAdv + ')</span>';
+                    btnOneClickHedge.innerHTML = `<span>⏳ เฝ้าระวังราคา (Adverse ${adv}/${maxAdv})</span>`;
                 }
             } else if (phase === 'ARMED') {
                 if (actionCard) actionCard.className = 'action-card wait';
                 const wc = (reverseV15State && reverseV15State.hedgePreview) ? Math.round(reverseV15State.hedgePreview.minFinal) : '-';
                 if (statusBadge) {
-                    statusBadge.innerText = '🟡 ARMED (รอ Hedge Window)';
+                    statusBadge.innerText = '🟡 ARMED (กำลังรอ Hedge Window)';
                     statusBadge.style.color = 'var(--yellow)';
                 }
-                if (actionSideEl) actionSideEl.innerText = '🟡 ARM แล้ว — รอราคาเข้า Hedge Window (Worst Case ' + wc + ' B)';
+                if (actionSideEl) actionSideEl.innerText = `🟡 ARM แล้ว — รอราคาเข้า Hedge Window (Cycle #${reverseV15State.armCycle || 1})`;
                 if (actionStakeEl) {
                     actionStakeEl.innerText = 'อย่าเพิ่งกด';
                     actionStakeEl.className = 'stake-badge wait';
@@ -1935,7 +1953,7 @@ function calculateActionAndAdvisor(netRed, netBlue) {
                 if (btnOneClickHedge) {
                     btnOneClickHedge.disabled = true;
                     btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                    btnOneClickHedge.innerHTML = '<span>🟡 ARMED — รอ Hedge Window (Worst Case ' + wc + ' B)</span>';
+                    btnOneClickHedge.innerHTML = `<span>🟡 ARMED — รอราคาเข้า Hedge Window (Cycle #${reverseV15State.armCycle || 1})</span>`;
                 }
             } else if (phase === 'REVERSED') {
                 if (actionCard) actionCard.className = 'action-card neutral';
@@ -1957,19 +1975,19 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             } else if (phase === 'EXPIRED') {
                 if (actionCard) actionCard.className = 'action-card neutral';
                 if (statusBadge) {
-                    statusBadge.innerText = '⚪ EXPIRED';
+                    statusBadge.innerText = '⚪ ARM EXPIRED (รอจังหวะใหม่)';
                     statusBadge.style.color = 'var(--text-muted)';
                 }
-                if (actionSideEl) actionSideEl.innerText = '⚪ ARM หมดอายุ (ราคาไม่ผ่าน Hedge Window ภายในเวลาที่กำหนด)';
+                if (actionSideEl) actionSideEl.innerText = '⚪ ARM Cycle หมดอายุ — พัก Cooldown และรอประเมินจังหวะใหม่';
                 if (actionStakeEl) {
-                    actionStakeEl.innerText = 'หมดเวลา';
+                    actionStakeEl.innerText = 'รอจังหวะใหม่';
                     actionStakeEl.className = 'stake-badge wait';
                     actionStakeEl.onclick = null;
                 }
                 if (btnOneClickHedge) {
                     btnOneClickHedge.disabled = true;
                     btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                    btnOneClickHedge.innerHTML = '<span>⚪ ARM หมดอายุแล้ว</span>';
+                    btnOneClickHedge.innerHTML = '<span>⚪ ARM EXPIRED (กำลังกลับไปเฝ้าราคาต่อ)</span>';
                 }
             }
         } else {
@@ -2125,6 +2143,7 @@ function renderAdvancePlanTable(netRed, netBlue) {
                 '[' + corner.toUpperCase() + ' ' + icon + ' ' + side.toUpperCase() + ' ' + a + ':' + b + ']</span>';
         };
         const tierBadge = t.tierLabel ? '<div class="tier-pill tier-' + t.tier + '">' + t.tierLabel + '</div>' : '';
+        const targetCorner = leadingCorner === 'red' ? 'blue' : 'red';
         const leadingOdds = leadingCorner === 'red' ? redOdds : blueOdds;
         const targetOdds = leadingCorner === 'red' ? blueOdds : redOdds;
         const leadingLabel = leadingCorner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
@@ -2531,6 +2550,23 @@ function stopSimulation() {
 })();
 
 // 🔄 Reverse Engine V15 — Render Panel & Debug Toggle Functions
+function toggleV15PanelBody() {
+    const body = document.getElementById('v15PanelBody');
+    const icon = document.getElementById('v15CollapseIcon');
+    if (!body) return;
+    const isHidden = body.style.display === 'none' || body.classList.contains('hidden');
+    if (isHidden) {
+        body.classList.remove('hidden');
+        body.style.display = '';
+        if (icon) icon.textContent = '▲ ย่อ';
+    } else {
+        body.classList.add('hidden');
+        body.style.display = 'none';
+        if (icon) icon.textContent = '▼ ขยาย';
+    }
+}
+window.toggleV15PanelBody = toggleV15PanelBody;
+
 function renderReverseV15Panel(state) {
     if (!state || typeof ReverseV15Engine === 'undefined') return;
     const cornerIcon = c => c === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
@@ -2542,7 +2578,9 @@ function renderReverseV15Panel(state) {
         WAIT: '⏳ WAIT', ARMED: '🟡 ARMED',
         REVERSE_READY: '🟢 REVERSE READY', REVERSED: '✅ REVERSED', EXPIRED: '⚪ EXPIRED'
     };
-    set('v15StatusBadge', statusMap[state.phase] || state.phase);
+    const stText = statusMap[state.phase] || state.phase;
+    set('v15StatusBadge', stText);
+    set('v15HeaderBadge', stText);
     set('v15EntryText', `${cornerIcon(state.entryCorner)} ${sideText(state.entrySide)} @ ${state.entryOdds.a}:${state.entryOdds.b}`);
     set('v15AdverseText', `${state.adverseCount} ticks`);
     set('v15ArmText', state.armed ? '✓ ผ่าน' : `${state.adverseCount}/${ReverseV15Engine.REVERSE_V15_CONFIG.adverseCountToArm}`);

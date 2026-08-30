@@ -467,8 +467,14 @@
 
                     <!-- 🆕 Panel แสดงสถานะ Reverse Engine V15 -->
                     <div id="reverseV15Panel" class="glossy-panel hidden" style="margin-top: 10px;">
-                        <div class="glossy-header">🔄 Hedge Window Reverse — สถานะ</div>
-                        <div class="panel-body">
+                        <div class="glossy-header" onclick="toggleV15PanelBody()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🔄 Hedge Window Reverse — สถานะ</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span id="v15HeaderBadge" style="font-size: 0.75rem; opacity: 0.9; color: rgb(56, 189, 248);">⏳ WAIT</span>
+                                <span id="v15CollapseIcon" style="color:#38bdf8; font-size:0.75rem; font-weight:700;">▲ ย่อ</span>
+                            </div>
+                        </div>
+                        <div id="v15PanelBody" class="panel-body">
                             <div class="v15-row"><span>สถานะ</span><strong id="v15StatusBadge">-</strong></div>
                             <div class="v15-row"><span>เหตุผล</span><span id="v15ReasonText">-</span></div>
                             <div class="v15-row"><span>Entry</span><span id="v15EntryText">-</span></div>
