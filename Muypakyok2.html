@@ -401,7 +401,7 @@
                             ⏳ 0 กลยุทธ์
                         </span>
                     </div>
-                    <div class="strategy-grid strategy-grid-4">
+                    <div class="strategy-grid strategy-grid-5">
                         <button class="btn-strat active" id="btnSkewRunner" onclick="setStrategy('skew_runner')">
                             🔥 รันกำไร 70/30<br><small>(รันฝั่งเต็ง + กำไรการันตี)</small>
                         </button>
@@ -413,6 +413,9 @@
                         </button>
                         <button class="btn-strat" id="btnSmartCut" onclick="setStrategy('smart_cut')">
                             🛡️ ยอมเสียน้อย<br><small>(ได้มาก+เสียน้อย)</small>
+                        </button>
+                        <button class="btn-strat" id="btnReverseV15" onclick="setStrategy('reverse_v15')">
+                            🔄 Hedge Window Reverse<br><small>(ผิดทาง → ARM → รอจังหวะ Hedge → Reverse)</small>
                         </button>
                     </div>
 
@@ -459,6 +462,52 @@
                                 <span class="skew-check-box"><span class="check-icon">✓</span></span>
                                 <span class="skew-check-text">🔵 น้ำเงินได้กำไร</span>
                             </label>
+                        </div>
+                    </div>
+
+                    <!-- 🆕 Panel แสดงสถานะ Reverse Engine V15 -->
+                    <div id="reverseV15Panel" class="glossy-panel hidden" style="margin-top: 10px;">
+                        <div class="glossy-header">🔄 Hedge Window Reverse — สถานะ</div>
+                        <div class="panel-body">
+                            <div class="v15-row"><span>สถานะ</span><strong id="v15StatusBadge">-</strong></div>
+                            <div class="v15-row"><span>เหตุผล</span><span id="v15ReasonText">-</span></div>
+                            <div class="v15-row"><span>Entry</span><span id="v15EntryText">-</span></div>
+                            <div class="v15-row"><span>Current</span><span id="v15CurrentText">-</span></div>
+                            <div class="v15-row"><span>Adverse</span><span id="v15AdverseText">-</span></div>
+                            <div class="v15-row"><span>Pressure</span><span id="v15PressureText">-</span></div>
+                            <div class="v15-row"><span>ARM</span><span id="v15ArmText">-</span></div>
+                            <div class="v15-row"><span>Hedge Window</span><span id="v15WindowText">-</span></div>
+                            <div class="v15-row"><span>Hedge ที่ต้องใช้</span><span id="v15HedgeStakeText">-</span></div>
+                            <div class="v15-row"><span>Worst Case</span><span id="v15WorstCaseText">-</span></div>
+                            <div class="v15-row"><span>Action</span><strong id="v15ActionText">-</strong></div>
+
+                            <label class="v15-debug-toggle">
+                                <input type="checkbox" id="v15DebugToggle" onchange="toggleV15Debug(this.checked)">
+                                🧪 V15 Debug
+                            </label>
+                            <pre id="v15DebugOutput" class="hidden"></pre>
+                        </div>
+                    </div>
+
+                    <!-- 🆕 Min Profit Floor (%) — เฉพาะกลยุทธ์ equal -->
+                    <div id="equalFloorRow" class="skew-target-selector hidden">
+                        <div class="skew-target-header">
+                            <span>🟢 กำไรขั้นต่ำที่ยอมรับ:</span>
+                            <span class="skew-target-desc">(% ของ stake ไม้แรก ไม่ใช่ risk amount)</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                            <input type="number" id="minProfitFloorPctInput" min="0" step="1" value="10"
+                                oninput="onMinProfitFloorValueChange(this.value)"
+                                style="background: rgba(15, 23, 42, 0.95); font-weight: 600; width: 70px; padding: 5px 8px; font-size: 0.78rem; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; color: #fff;">
+                            <span style="color: var(--text-muted);">% →</span>
+                            <span id="minProfitFloorBahtDisplay" style="font-weight:600; color:#38bdf8;">0 B</span>
+                        </div>
+                        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+                            <button type="button" class="floor-preset-btn" data-pct="0" onclick="onMinProfitFloorValueChange(0)">0%</button>
+                            <button type="button" class="floor-preset-btn active" data-pct="10" onclick="onMinProfitFloorValueChange(10)">10%</button>
+                            <button type="button" class="floor-preset-btn" data-pct="20" onclick="onMinProfitFloorValueChange(20)">20%</button>
+                            <button type="button" class="floor-preset-btn" data-pct="30" onclick="onMinProfitFloorValueChange(30)">30%</button>
+                            <button type="button" class="floor-preset-btn" data-pct="40" onclick="onMinProfitFloorValueChange(40)">40%</button>
                         </div>
                     </div>
 
@@ -511,23 +560,6 @@
                                 <option value="breakeven">🟡 ขอเท่าทุน</option>
                                 <option value="smart_cut">🛡️ ยอมเสียน้อย</option>
                             </select>
-                        </div>
-                    </div>
-                    <!-- ตัวเลือกกำไรขั้นต่ำสำหรับ Auto-Fire (เฉพาะเมื่อเลือก equal) -->
-                    <div id="equalMinProfitFloorRow" class="hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <label style="font-size: 0.76rem; color: #a7f3d0; font-weight: 600;">🟢 ยิงเฉพาะเมื่อกำไรขั้นต่ำ:</label>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="font-weight: 700; color: #34d399; font-size: 0.9rem;">≥</span>
-                            <div style="position: relative; flex: 1; display: flex; align-items: center;">
-                                <input type="number" id="minProfitFloorValue" min="0" step="1" placeholder="0" value="0" oninput="onMinProfitFloorValueChange()" style="background: rgba(15, 23, 42, 0.95); font-weight: 600; width: 100%; padding: 5px 35px 5px 8px; font-size: 0.78rem; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; color: #fff;">
-                                <span id="minProfitFloorUnitSuffix" style="position: absolute; right: 8px; font-size: 0.72rem; color: var(--text-muted); pointer-events: none;">บาท</span>
-                            </div>
-                        </div>
-                        <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">
-                            ค่าเริ่มต้น 0 = พฤติกรรมเดิม (ยิงทันทีที่ทั้งสองฝั่ง ≥ 0 บาท)
-                        </div>
                     </div>
                     <div id="autoOrderStatusBox" class="auto-status-box idle" style="margin-top: 8px;">
                         <span>สถานะ: <strong id="autoOrderStatusText">ปิดระบบอยู่ (เลือกกลยุทธ์แล้วกดเปิด AUTO)</strong></span>
@@ -640,6 +672,7 @@
 </div>
 
 <script src="price_journey_engine.js"></script>
+<script src="reverse_v15_engine.js"></script>
 <script src="data.js"></script>
 <script src="Muypakyok2.js"></script>
 <script src="bt_hub_extension.js"></script>
