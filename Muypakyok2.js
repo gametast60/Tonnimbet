@@ -13,10 +13,6 @@ let _entryTargetRatio = null; // 🆕 targetRatio ตอนเข้าไม้
 let reverseV15State = null;   // null = ยังไม่มี entry / รอบใหม่
 let reverseV15Debug = false;  // toggle จากปุ่ม Debug
 
-// 🧠 V16 Multi-Leg state (auto-entry + trigger/leg suggestion, ตาม backtest V16.0.22)
-let v16MLState = null;        // null = ยังไม่มี entry / รอบใหม่
-let v16LegFactor = 0.75;      // 🎯 LEG_FACTOR ปรับได้จาก UI (ค่าเริ่มต้นตาม backtest)
-
 const standardBoxingOdds = [
     { a: 10, b: 9, val: 10/9, label: "10:9" },
     { a: 5, b: 4, val: 5/4, label: "5:4" },
@@ -281,7 +277,6 @@ function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
         _priceUpdateCountSinceEntry = 0; // 🆕 reset ตอนวางตั๋วแรก
         _entryTargetRatio = null; // 🆕 reset entry target ratio
         reverseV15State = null;   // 🆕 reset ทุกครั้งที่เริ่มไฟท์ใหม่ (ไม้แรกจริง)
-        v16MLState = null;        // 🧠 reset V16 multi-leg ทุกครั้งที่เริ่มไฟท์ใหม่
         const curFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
         const curFavA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
         const curFavB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
@@ -324,17 +319,6 @@ function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
         };
     }
 
-    // 🧠 ถ้านี่คือไม้แรกจริง ให้ init v16MLState ด้วย (entry อาจมาจากคำแนะนำ V16 หรือผู้ใช้กดเอง — เก็บ entryCorner ไว้เฝ้า trigger ต่อ)
-    if (tickets.length === 1 && !v16MLState) {
-        v16MLState = {
-            entryCorner: tickets[0].corner,
-            entryOdds: { a: tickets[0].a, b: tickets[0].b },
-            entryStake: tickets[0].stake,
-            legsPlaced: 1,
-            phase: 'WATCHING_TRIGGER1'
-        };
-    }
-
     renderTickets();
     calculateAll();
     return id;
@@ -346,7 +330,6 @@ function removeTicket(id) {
         _priceUpdateCountSinceEntry = 0; // 🆕 reset เมื่อลบตั๋วทั้งหมด
         _entryTargetRatio = null;
         reverseV15State = null;   // 🆕 reset เมื่อลบตั๋วทั้งหมด
-        v16MLState = null;        // 🧠 reset เมื่อลบตั๋วทั้งหมด
         _lastCountedOdds = { favCorner: null, favA: null, favB: null, dogCorner: null, dogA: null, dogB: null };
     }
     renderTickets();
@@ -451,8 +434,6 @@ function setStrategy(strat) {
     if (btnSmartCut) btnSmartCut.classList.toggle('active', strat === 'smart_cut');
     if (btnFallback) btnFallback.classList.toggle('active', strat === 'forced_fallback'); // 🆕
     if (btnReverseV15) btnReverseV15.classList.toggle('active', strat === 'reverse_v15'); // 🆕
-    const btnV16Reverse = document.getElementById('btnV16Reverse'); // 🎯
-    if (btnV16Reverse) btnV16Reverse.classList.toggle('active', strat === 'v16_reverse'); // 🎯
 
     // แสดง/ซ่อน selector เฉพาะกลยุทธ์ (จำค่าเดิมไว้ ไม่รีเซ็ต)
     const skewTargetRow = document.getElementById('skewTargetRow');
@@ -461,14 +442,9 @@ function setStrategy(strat) {
     if (breakevenTargetRow) breakevenTargetRow.classList.toggle('hidden', strat !== 'breakeven');
     const equalFloorRow = document.getElementById('equalFloorRow');
     if (equalFloorRow) equalFloorRow.classList.toggle('hidden', strat !== 'equal');
-    const v16ReverseOptionsRow = document.getElementById('v16ReverseOptionsRow'); // 🎯
-    if (v16ReverseOptionsRow) v16ReverseOptionsRow.classList.toggle('hidden', strat !== 'v16_reverse'); // 🎯
 
     const reverseV15Panel = document.getElementById('reverseV15Panel');           // 🆕
     if (reverseV15Panel) reverseV15Panel.classList.toggle('hidden', strat !== 'reverse_v15'); // 🆕
-
-    const v16ReversePanel = document.getElementById('v16ReversePanel');           // 🎯
-    if (v16ReversePanel) v16ReversePanel.classList.toggle('hidden', strat !== 'v16_reverse'); // 🎯
 
     calculateAll();
 }
@@ -529,18 +505,6 @@ function onMinProfitFloorValueChange(pctValue) {
     document.querySelectorAll('.floor-preset-btn').forEach(btn => {
         btn.classList.toggle('active', parseFloat(btn.dataset.pct) === pct);
     });
-
-    calculateAll();
-}
-
-// 🎯 อัปเดตค่า LEG_FACTOR เมื่อผู้ใช้พิมพ์ในช่อง input (V16 Reverse)
-function onV16LegFactorChange(value) {
-    let v = parseFloat(value);
-    if (isNaN(v) || v <= 0) v = 0.75;
-    v16LegFactor = v;
-
-    const input = document.getElementById('v16LegFactorInput');
-    if (input && document.activeElement !== input) input.value = v;
 
     calculateAll();
 }
@@ -1429,9 +1393,6 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         btnBreakeven.classList.remove('ready-breakeven');
         btnSmartCut.classList.remove('ready-smart-cut');
         if (btnReverseV15) btnReverseV15.classList.toggle('ready-reverse-v15', isV15Ready);
-        const btnV16ReverseClear = document.getElementById('btnV16Reverse');
-        if (btnV16ReverseClear) btnV16ReverseClear.classList.remove('ready-v16-reverse');
-        if (currentStrategy === 'v16_reverse') renderV16ReversePanel(v16MLState);
         updateReadyCountBadge(0);
         // 🆕 ซ่อน dot fallback ด้วยเมื่อ clear
         const dotElClear = document.getElementById('fallbackReadyDot');
@@ -1687,23 +1648,6 @@ function calculateActionAndAdvisor(netRed, netBlue) {
     let leadingProfit = Math.max(netRed, netBlue);
     let laggingProfit = Math.min(netRed, netBlue);
 
-    // 🎯 V16 Reverse — เฝ้า trigger1/trigger2 และแนะนำ leg2/leg3 (ทำงานอิสระ ไม่ขึ้นกับว่ากำลังดู panel ไหนอยู่)
-    let v16RIsReady = false;
-    if (tickets.length >= 1 && v16MLState && typeof V16ReverseEngine !== 'undefined') {
-        v16MLState = V16ReverseEngine.evaluateMultiLegState(v16MLState, {
-            redOdds: currentPrice.red,
-            blueOdds: currentPrice.blue,
-            netRed,
-            netBlue,
-            ticketsCount: tickets.length,
-            config: { legFactor: v16LegFactor }
-        });
-        v16RIsReady = (v16MLState.phase === 'LEG2_READY' || v16MLState.phase === 'LEG3_READY');
-        if (currentStrategy === 'v16_reverse') renderV16ReversePanel(v16MLState);
-    }
-    const btnV16Reverse = document.getElementById('btnV16Reverse');
-    if (btnV16Reverse) btnV16Reverse.classList.toggle('ready-v16-reverse', v16RIsReady);
-
     // 1. ลำดับขั้นราคามวย 10:9 ➔ 20:1 โชว์ไว้ตลอดเวลา 100%
     if (targetBox) {
         targetBox.innerHTML = renderTargetPriceList(leadingCorner, leadingProfit, laggingProfit, false, oddA, oddB);
@@ -1711,8 +1655,6 @@ function calculateActionAndAdvisor(netRed, netBlue) {
 
     if (tickets.length === 0) {
         updateStrategyButtonsReadiness(null, 0, 0, false, 0);
-        v16MLState = null;
-        if (currentStrategy === 'v16_reverse') renderV16ReversePanel(null);
         if (actionCard) actionCard.className = "action-card neutral";
         if (actionSideEl) actionSideEl.innerText = 'รอเปิดไม้แรก';
         if (actionStakeEl) {
@@ -1833,28 +1775,6 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             isFallback: true,         // 🆕 flag บอกว่านี่คือ fallback mode
             isRecommended: !!plan.isRecommended  // 🆕 ครบ 3 เงื่อนไข → ปุ่มเขียว
         };
-    } else if (currentStrategy === 'v16_reverse') {
-        // 🎯 ใช้ค่าที่คำนวณไว้แล้วจาก v16MLState ตรงๆ (คำนวณทุก tick ด้านบนแล้ว)
-        let s = null;
-        if (v16MLState && v16MLState.phase === 'LEG2_READY') s = v16MLState.leg2Suggestion;
-        else if (v16MLState && v16MLState.phase === 'LEG3_READY') s = v16MLState.leg3Suggestion;
-
-        let finalRedProf = 0, finalBlueProf = 0;
-        if (s && typeof V16ReverseEngine !== 'undefined') {
-            const applied = V16ReverseEngine.applyLeg(netRed, netBlue, s.corner, s.odds, s.suggestedStake);
-            finalRedProf = applied.netRed;
-            finalBlueProf = applied.netBlue;
-        }
-
-        hedgeResult = {
-            hedgeStake: s ? s.suggestedStake : 0,
-            targetCorner: s ? s.corner : undefined,
-            finalRedProf: Math.round(finalRedProf),
-            finalBlueProf: Math.round(finalBlueProf),
-            isReady: !!s,
-            isV16Reverse: true,
-            v16Phase: v16MLState ? v16MLState.phase : null
-        };
     } else if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculateStrategyHedge) {
         hedgeResult = PriceJourneyEngine.calculateStrategyHedge({
             strategy: currentStrategy,
@@ -1910,8 +1830,6 @@ function calculateActionAndAdvisor(netRed, netBlue) {
             actionTitleEl.textContent = '🔄 Hedge Window Reverse:';
         } else if (currentStrategy === 'forced_fallback') {
             actionTitleEl.textContent = '🆘 Forced-Exit Fallback (อ้างอิง ไม่ใช่เป้าหมาย):';
-        } else if (currentStrategy === 'v16_reverse') {
-            actionTitleEl.textContent = '🎯 V16 Reverse:';
         } else {
             actionTitleEl.textContent = '👉 สถานะการออกตัว:';
         }
@@ -1943,9 +1861,6 @@ function calculateActionAndAdvisor(netRed, netBlue) {
                 const fbPlan = window._lastFallbackPlan;
                 const pct = fbPlan ? fbPlan.recoveryPct.toFixed(1) : '0.0';
                 stratStatusText = '🆘 ทางออกสำรอง (Recovery ' + pct + '%)';
-            } else if (currentStrategy === 'v16_reverse') {
-                const legLabel = hedgeResult.v16Phase === 'LEG3_READY' ? 'Leg 3' : 'Leg 2';
-                stratStatusText = '🎯 พร้อมวาง ' + legLabel;
             } else {
                 stratStatusText = '✅ เข้าเงื่อนไขออกตัว';
             }
@@ -1990,9 +1905,6 @@ function calculateActionAndAdvisor(netRed, netBlue) {
                     stratLabel = 'คุมขาดทุน';
                 } else if (currentStrategy === 'forced_fallback') {
                     stratLabel = 'ออกทางสำรอง (Forced-Exit)';
-                } else if (currentStrategy === 'v16_reverse') {
-                    const legLabel = hedgeResult.v16Phase === 'LEG3_READY' ? 'Leg 3' : 'Leg 2';
-                    stratLabel = 'V16 Reverse: วาง ' + legLabel;
                 } else {
                     stratLabel = 'ล็อคกำไร';
                 }
@@ -2709,59 +2621,3 @@ function toggleV15Debug(checked) {
     const out = document.getElementById('v15DebugOutput');
     if (out) out.classList.toggle('hidden', !checked);
 }
-
-
-// 🎯 V16 Reverse — Render Panel
-// แสดงสถานะ trigger1/leg2/trigger2/leg3 เท่านั้น การยิงจริงใช้ปุ่ม ⚡ กด...ทันที มาตรฐาน (ไม่มีปุ่ม confirm แยก)
-function renderV16ReversePanel(state) {
-    const set = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
-    const badge = document.getElementById('v16RHeaderBadge');
-    if (!badge) return;
-
-    if (!state) {
-        badge.innerText = '⏳ รอไม้แรก'; badge.style.color = 'rgb(56, 189, 248)';
-        set('v16RStatusText', 'ยังไม่มีไม้แรก');
-        set('v16RDetailText', 'วางไม้แรกเองตามปกติ แล้วระบบจะเริ่มเฝ้า trigger ให้');
-        return;
-    }
-
-    if (state.phase === 'WATCHING_TRIGGER1') {
-        badge.innerText = '👀 เฝ้าดู Trigger 1'; badge.style.color = 'var(--yellow)';
-        set('v16RStatusText', 'มีไม้แรกแล้ว รอฝั่งตรงข้ามกลายเป็นต่อ');
-        set('v16RDetailText', '-');
-        return;
-    }
-
-    if (state.phase === 'LEG2_READY' && state.leg2Suggestion) {
-        const s = state.leg2Suggestion;
-        const cornerText = s.corner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
-        badge.innerText = '🟢 พร้อมวาง Leg 2'; badge.style.color = 'var(--green)';
-        set('v16RStatusText', `Trigger 1 เข้า — เพิ่มไม้ ${cornerText}`);
-        set('v16RDetailText', `${s.odds.a}:${s.odds.b} — แนะนำ ${s.suggestedStake.toLocaleString()} B (LEG_FACTOR ${v16LegFactor} × recoverable) — กดปุ่ม ⚡ ด้านล่างเพื่อยิง`);
-        return;
-    }
-
-    if (state.phase === 'WATCHING_TRIGGER2') {
-        badge.innerText = '👀 เฝ้าดู Trigger 2'; badge.style.color = 'var(--yellow)';
-        set('v16RStatusText', 'มี Leg 2 แล้ว รอฝั่งเดิม (entry) กลายเป็นต่ออีกครั้ง');
-        set('v16RDetailText', '-');
-        return;
-    }
-
-    if (state.phase === 'LEG3_READY' && state.leg3Suggestion) {
-        const s = state.leg3Suggestion;
-        const cornerText = s.corner === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
-        badge.innerText = '🟢 พร้อมวาง Leg 3'; badge.style.color = 'var(--green)';
-        set('v16RStatusText', `Trigger 2 เข้า — เพิ่มไม้ ${cornerText}`);
-        set('v16RDetailText', `${s.odds.a}:${s.odds.b} — แนะนำ ${s.suggestedStake.toLocaleString()} B (LEG_FACTOR ${v16LegFactor} × recoverable) — กดปุ่ม ⚡ ด้านล่างเพื่อยิง`);
-        return;
-    }
-
-    if (state.phase === 'MONITOR_ONLY') {
-        badge.innerText = 'ℹ️ ครบ 3 ไม้แล้ว'; badge.style.color = 'rgb(148, 163, 184)';
-        set('v16RStatusText', 'ใช้ครบ Leg 1-3 แล้ว — เลือกออกตัวด้วย 4 กลยุทธ์เดิมได้เลย');
-        set('v16RDetailText', '-');
-        return;
-    }
-}
-window.renderV16ReversePanel = renderV16ReversePanel;

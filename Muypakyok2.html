@@ -417,9 +417,6 @@
                         <button class="btn-strat" id="btnReverseV15" onclick="setStrategy('reverse_v15')">
                             🔄 Hedge Window Reverse<br><small>(ผิดทาง → ARM → รอจังหวะ Hedge → Reverse)</small>
                         </button>
-                        <button class="btn-strat" id="btnV16Reverse" onclick="setStrategy('v16_reverse')">
-                            🎯 V16 Reverse<br><small>(เฝ้า Trigger1→Leg2, Trigger2→Leg3)</small>
-                        </button>
                     </div>
 
                     <!-- 🆕 ปุ่ม Forced-Exit Fallback (ทางออกสำรอง) -->
@@ -465,32 +462,6 @@
                                 <span class="skew-check-box"><span class="check-icon">✓</span></span>
                                 <span class="skew-check-text">🔵 น้ำเงินได้กำไร</span>
                             </label>
-                        </div>
-                    </div>
-
-                    <!-- 🎯 ตัวเลือก LEG_FACTOR (เฉพาะเมื่อเลือก v16_reverse) -->
-                    <div id="v16ReverseOptionsRow" class="skew-target-selector hidden">
-                        <div class="skew-target-header">
-                            <span>🎯 LEG_FACTOR:</span>
-                            <span class="skew-target-desc">(สัดส่วนของ stake ที่ recover ได้สูงสุด ใช้คำนวณ leg2/leg3)</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-                            <input type="number" id="v16LegFactorInput" min="0.1" max="1" step="0.05" value="0.75"
-                                oninput="onV16LegFactorChange(this.value)"
-                                style="background: rgba(15, 23, 42, 0.95); font-weight: 600; width: 80px; padding: 5px 8px; font-size: 0.78rem; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; color: #fff;">
-                            <span style="color: var(--text-muted);">(ค่าเริ่มต้น 0.75)</span>
-                        </div>
-                    </div>
-
-                    <!-- 🎯 Panel แสดงสถานะ V16 Reverse -->
-                    <div id="v16ReversePanel" class="glossy-panel hidden" style="margin-top: 10px;">
-                        <div class="glossy-header" style="display: flex; justify-content: space-between; align-items: center;">
-                            <span>🎯 V16 Reverse — สถานะ</span>
-                            <span id="v16RHeaderBadge" style="font-size: 0.75rem; opacity: 0.9; color: rgb(56, 189, 248);">⏳ รอไม้แรก</span>
-                        </div>
-                        <div class="panel-body">
-                            <div class="v15-row"><span>สถานะ</span><strong id="v16RStatusText">-</strong></div>
-                            <div class="v15-row"><span>รายละเอียด</span><span id="v16RDetailText">-</span></div>
                         </div>
                     </div>
 
@@ -708,7 +679,6 @@
 
 <script src="price_journey_engine.js"></script>
 <script src="reverse_v15_engine.js"></script>
-<script src="v16_reverse_engine.js"></script>
 <script src="data.js"></script>
 <script src="Muypakyok2.js"></script>
 <script src="bt_hub_extension.js"></script>
