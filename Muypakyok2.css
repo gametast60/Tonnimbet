@@ -1292,6 +1292,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .strategy-grid.strategy-grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .strategy-grid.strategy-grid-5 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .strategy-grid.strategy-grid-5 #btnReverseV15 { grid-column: 1 / -1; }
+.strategy-grid.strategy-grid-5 #btnV16Reverse { grid-column: 1 / -1; }
 
 /* V15 panel */
 .v15-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -1435,6 +1436,22 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 .btn-strat.active.ready-reverse-v15 {
     box-shadow: 0 0 0 2px #ffffff, 0 0 18px rgba(139, 92, 246, 0.9) !important;
+}
+
+/* 6. V16 Reverse: ธีมสีเขียวมรกต/ฟ้าอมเขียว (Teal/Emerald Theme) */
+.btn-strat.ready-v16-reverse {
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
+    border: 1.5px solid #5eead4 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(13, 148, 136, 0.6) !important;
+    font-weight: 700;
+}
+.btn-strat.ready-v16-reverse:hover {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
+    border-color: #99f6e4 !important;
+}
+.btn-strat.active.ready-v16-reverse {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 18px rgba(20, 184, 166, 0.9) !important;
 }
 
 /* ==========================================
