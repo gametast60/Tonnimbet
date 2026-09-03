@@ -401,7 +401,7 @@
                             ⏳ 0 กลยุทธ์
                         </span>
                     </div>
-                    <div class="strategy-grid strategy-grid-5">
+                    <div class="strategy-grid strategy-grid-4">
                         <button class="btn-strat active" id="btnSkewRunner" onclick="setStrategy('skew_runner')">
                             🔥 รันกำไร 70/30<br><small>(รันฝั่งเต็ง + กำไรการันตี)</small>
                         </button>
@@ -414,16 +414,7 @@
                         <button class="btn-strat" id="btnSmartCut" onclick="setStrategy('smart_cut')">
                             🛡️ ยอมเสียน้อย<br><small>(ได้มาก+เสียน้อย)</small>
                         </button>
-                        <button class="btn-strat" id="btnReverseV15" onclick="setStrategy('reverse_v15')">
-                            🔄 Hedge Window Reverse<br><small>(ผิดทาง → ARM → รอจังหวะ Hedge → Reverse)</small>
-                        </button>
                     </div>
-
-                    <!-- 🆕 ปุ่ม Forced-Exit Fallback (ทางออกสำรอง) -->
-                    <button type="button" id="btnForcedFallback" class="btn-strat-fallback" onclick="setStrategy('forced_fallback')">
-                        🆘 Forced-Exit Fallback <span id="fallbackReadyDot" class="fallback-ready-dot hidden">●</span>
-                        <br><small>(ทางออกสำรอง ไม่ใช่เป้าหมาย)</small>
-                    </button>
 
                     <!-- ตัวเลือกรันกำไร 70% ฝั่งไหน (เฉพาะเมื่อเลือก skew_runner) -->
                     <div id="skewTargetRow" class="skew-target-selector">
@@ -462,36 +453,6 @@
                                 <span class="skew-check-box"><span class="check-icon">✓</span></span>
                                 <span class="skew-check-text">🔵 น้ำเงินได้กำไร</span>
                             </label>
-                        </div>
-                    </div>
-
-                    <!-- 🆕 Panel แสดงสถานะ Reverse Engine V15 -->
-                    <div id="reverseV15Panel" class="glossy-panel hidden" style="margin-top: 10px;">
-                        <div class="glossy-header" onclick="toggleV15PanelBody()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                            <span>🔄 Hedge Window Reverse — สถานะ</span>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <span id="v15HeaderBadge" style="font-size: 0.75rem; opacity: 0.9; color: rgb(56, 189, 248);">⏳ WAIT</span>
-                                <span id="v15CollapseIcon" style="color:#38bdf8; font-size:0.75rem; font-weight:700;">▲ ย่อ</span>
-                            </div>
-                        </div>
-                        <div id="v15PanelBody" class="panel-body">
-                            <div class="v15-row"><span>สถานะ</span><strong id="v15StatusBadge">-</strong></div>
-                            <div class="v15-row"><span>เหตุผล</span><span id="v15ReasonText">-</span></div>
-                            <div class="v15-row"><span>Entry</span><span id="v15EntryText">-</span></div>
-                            <div class="v15-row"><span>Current</span><span id="v15CurrentText">-</span></div>
-                            <div class="v15-row"><span>Adverse</span><span id="v15AdverseText">-</span></div>
-                            <div class="v15-row"><span>Pressure</span><span id="v15PressureText">-</span></div>
-                            <div class="v15-row"><span>ARM</span><span id="v15ArmText">-</span></div>
-                            <div class="v15-row"><span>Hedge Window</span><span id="v15WindowText">-</span></div>
-                            <div class="v15-row"><span>Hedge ที่ต้องใช้</span><span id="v15HedgeStakeText">-</span></div>
-                            <div class="v15-row"><span>Worst Case</span><span id="v15WorstCaseText">-</span></div>
-                            <div class="v15-row"><span>Action</span><strong id="v15ActionText">-</strong></div>
-
-                            <label class="v15-debug-toggle">
-                                <input type="checkbox" id="v15DebugToggle" onchange="toggleV15Debug(this.checked)">
-                                🧪 V15 Debug
-                            </label>
-                            <pre id="v15DebugOutput" class="hidden"></pre>
                         </div>
                     </div>
 
@@ -678,7 +639,6 @@
 </div>
 
 <script src="price_journey_engine.js"></script>
-<script src="reverse_v15_engine.js"></script>
 <script src="data.js"></script>
 <script src="Muypakyok2.js"></script>
 <script src="bt_hub_extension.js"></script>

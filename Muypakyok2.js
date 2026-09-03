@@ -9,10 +9,6 @@ let _priceUpdateCountSinceEntry = 0; // 🆕 grace period counter: นับค�
 let _lastCountedOdds = { favCorner: null, favA: null, favB: null, dogCorner: null, dogA: null, dogB: null }; // 🆕 บันทึกราคาล่าสุดที่นับ
 let _entryTargetRatio = null; // 🆕 targetRatio ตอนเข้าไม้แรก เพื่อเช็คราคาขยับ >= 0.15
 
-// 🔄 Reverse Engine V15 state
-let reverseV15State = null;   // null = ยังไม่มี entry / รอบใหม่
-let reverseV15Debug = false;  // toggle จากปุ่ม Debug
-
 const standardBoxingOdds = [
     { a: 10, b: 9, val: 10/9, label: "10:9" },
     { a: 5, b: 4, val: 5/4, label: "5:4" },
@@ -276,7 +272,6 @@ function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
     if (tickets.length === 0) {
         _priceUpdateCountSinceEntry = 0; // 🆕 reset ตอนวางตั๋วแรก
         _entryTargetRatio = null; // 🆕 reset entry target ratio
-        reverseV15State = null;   // 🆕 reset ทุกครั้งที่เริ่มไฟท์ใหม่ (ไม้แรกจริง)
         const curFavCorner = (document.getElementById('liveFavCorner') || {}).value || '';
         const curFavA = parseFloat((document.getElementById('liveOddA') || {}).value) || 0;
         const curFavB = parseFloat((document.getElementById('liveOddB') || {}).value) || 0;
@@ -300,25 +295,6 @@ function addTicket(corner = 'red', side = null, a = 2, b = 1, stake = 100) {
     tickets.push({ id, corner, side: actualSide, a: aa, b: bb, stake, createdAt });
     window._lastCreatedTicketId = id;
 
-    // 🆕 ถ้านี่คือไม้แรกจริง (tickets.length === 1 หลัง push) และยังไม่เคย init V15
-    //    ให้ init reverseV15State จาก tickets[0] ตรงนี้เลย ไม่ใช่รอ tick ถัดไป
-    if (tickets.length === 1 && !reverseV15State && typeof ReverseV15Engine !== 'undefined') {
-        const initRatio = ReverseV15Engine.ratio({ a: tickets[0].a, b: tickets[0].b });
-        reverseV15State = {
-            entryCorner: tickets[0].corner,
-            entrySide: tickets[0].side,
-            entryOdds: { a: tickets[0].a, b: tickets[0].b },
-            entryRatio: initRatio,
-            entryStake: tickets[0].stake,
-            previousRatio: initRatio,
-            adverseFlags: [],
-            adverseCount: 0,
-            armed: false, armIndex: null, armAge: 0,
-            reversed: false,
-            phase: 'WAIT'
-        };
-    }
-
     renderTickets();
     calculateAll();
     return id;
@@ -329,7 +305,6 @@ function removeTicket(id) {
     if (tickets.length === 0) {
         _priceUpdateCountSinceEntry = 0; // 🆕 reset เมื่อลบตั๋วทั้งหมด
         _entryTargetRatio = null;
-        reverseV15State = null;   // 🆕 reset เมื่อลบตั๋วทั้งหมด
         _lastCountedOdds = { favCorner: null, favA: null, favB: null, dogCorner: null, dogA: null, dogB: null };
     }
     renderTickets();
@@ -425,15 +400,11 @@ function setStrategy(strat) {
     const btnSkew = document.getElementById('btnSkewRunner');
     const btnBreakeven = document.getElementById('btnBreakeven');
     const btnSmartCut = document.getElementById('btnSmartCut');
-    const btnFallback = document.getElementById('btnForcedFallback'); // 🆕
-    const btnReverseV15 = document.getElementById('btnReverseV15');   // 🆕
 
     if (btnEqual) btnEqual.classList.toggle('active', strat === 'equal');
     if (btnSkew) btnSkew.classList.toggle('active', strat === 'skew_runner');
     if (btnBreakeven) btnBreakeven.classList.toggle('active', strat === 'breakeven');
     if (btnSmartCut) btnSmartCut.classList.toggle('active', strat === 'smart_cut');
-    if (btnFallback) btnFallback.classList.toggle('active', strat === 'forced_fallback'); // 🆕
-    if (btnReverseV15) btnReverseV15.classList.toggle('active', strat === 'reverse_v15'); // 🆕
 
     // แสดง/ซ่อน selector เฉพาะกลยุทธ์ (จำค่าเดิมไว้ ไม่รีเซ็ต)
     const skewTargetRow = document.getElementById('skewTargetRow');
@@ -442,9 +413,6 @@ function setStrategy(strat) {
     if (breakevenTargetRow) breakevenTargetRow.classList.toggle('hidden', strat !== 'breakeven');
     const equalFloorRow = document.getElementById('equalFloorRow');
     if (equalFloorRow) equalFloorRow.classList.toggle('hidden', strat !== 'equal');
-
-    const reverseV15Panel = document.getElementById('reverseV15Panel');           // 🆕
-    if (reverseV15Panel) reverseV15Panel.classList.toggle('hidden', strat !== 'reverse_v15'); // 🆕
 
     calculateAll();
 }
@@ -624,13 +592,6 @@ function executeOneClickHedge() {
     if (betInput) {
         betInput.value = recommendedStake;
         betInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    // 🆕 ถ้ากำลังยิงตอนเป็น reverse_v15 ให้ล็อค state เป็น REVERSED ทันทีตั้งแต่ก่อนยิงตั๋ว
-    if (hedgeSnapshot.strategy === 'reverse_v15' && reverseV15State) {
-        reverseV15State.reversed = true;
-        reverseV15State.phase = 'REVERSED';
-        window._lastV15Plan = reverseV15State;
     }
 
     if (typeof qbTriggerAutoBet === 'function') {
@@ -1310,80 +1271,19 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
     const btnEqual = document.getElementById('btnEqual');
     const btnBreakeven = document.getElementById('btnBreakeven');
     const btnSmartCut = document.getElementById('btnSmartCut');
-    const btnReverseV15 = document.getElementById('btnReverseV15'); // 🆕
 
     if (!btnSkew || !btnEqual || !btnBreakeven || !btnSmartCut) return;
-
-    // 🆕 Reverse Engine V15 — รันการคำนวณและอัปเดตไฟสถานะ V15 ที่จุดเริ่มต้นทันที (อิสระ ไม่ถูกบล็อคโดย early return ของ 4 กลยุทธ์เดิม)
-    if (reverseV15State && !reverseV15State.reversed && typeof ReverseV15Engine !== 'undefined') {
-        const cfg = ReverseV15Engine.REVERSE_V15_CONFIG;
-
-        // 🔑 1. เช็คพอร์ตจริงก่อนเสมอ — ไม่ว่าจะมองอยู่หน้ากลยุทธ์ไหน หรือกดจากกลยุทธ์ไหนก็ตาม
-        // ถ้าพอร์ตเปิดตั๋วมากกว่า 1 ไม้ (tickets.length > 1) และผลตอบแทนฝั่งที่แย่ที่สุดในพอร์ตปลอดภัยแล้ว (laggingProfit >= -roundTolerance)
-        // แปลว่าพอร์ตถูก Hedge เรียบร้อยแล้ว ต้องล็อค reverseV15State.reversed = true และ phase = 'REVERSED' ทันที!
-        if (tickets.length > 1 && laggingProfit >= -cfg.roundTolerance) {
-            reverseV15State.reversed = true;
-            reverseV15State.phase = 'REVERSED';
-            window._lastV15Plan = reverseV15State;
-        } else {
-            const entryCorner = reverseV15State.entryCorner;
-            const hedgeCorner = entryCorner === 'red' ? 'blue' : 'red';
-            const curEntryOdds = currentPrice[entryCorner];
-            const curHedgeOdds = currentPrice[hedgeCorner];
-
-            if (isOddsValid(curEntryOdds)) {
-                const curEntryKey = `${curEntryOdds.a}:${curEntryOdds.b}`;
-                const curHedgeKey = isOddsValid(curHedgeOdds) ? `${curHedgeOdds.a}:${curHedgeOdds.b}` : '-';
-                const currentOddsKey = `${curEntryKey}|${curHedgeKey}`;
-
-                // 🔑 เช็คราคาเดิมไหม: ถ้าเป็นราคา tick เดิมที่เคยประเมินแล้ว ไม่รัน stepReverseV15 ซ้ำ
-                if (reverseV15State._lastStepOddsKey !== currentOddsKey) {
-                    const stepResult = ReverseV15Engine.stepReverseV15(
-                        reverseV15State,
-                        { a: curEntryOdds.a, b: curEntryOdds.b },
-                        isOddsValid(curHedgeOdds) ? { a: curHedgeOdds.a, b: curHedgeOdds.b } : null,
-                        cfg
-                    );
-                    stepResult._lastStepOddsKey = currentOddsKey;
-                    reverseV15State = stepResult; // state ใหม่ (immutable update)
-                    window._lastV15Plan = stepResult;
-                    if (reverseV15Debug) window._lastV15Debug = stepResult.debugInfo;
-                }
-            }
-        }
-
-        if (currentStrategy === 'reverse_v15') {
-            renderReverseV15Panel(reverseV15State);
-        }
-    }
-
-    const isV15Ready = !!(reverseV15State && reverseV15State.phase === 'REVERSE_READY');
-    if (btnReverseV15) btnReverseV15.classList.toggle('ready-reverse-v15', isV15Ready);
 
     const updateReadyCountBadge = (count) => {
         const badge = document.getElementById('strategyReadyBadge');
         if (!badge) return;
 
-        let v15Text = '';
-        if (reverseV15State) {
-            const v15Map = {
-                WAIT: '⏳ WAIT',
-                ARMED: '🟡 ARMED',
-                REVERSE_READY: '🟢 REVERSE READY',
-                REVERSED: '✅ REVERSED',
-                EXPIRED: '⚪ EXPIRED'
-            };
-            v15Text = ` | 🔄 V15: ${v15Map[reverseV15State.phase] || reverseV15State.phase}`;
-        } else {
-            v15Text = ` | 🔄 V15: ⏳ รอไม้แรก`;
-        }
-
-        if (count > 0 || isV15Ready) {
+        if (count > 0) {
             badge.className = 'strat-ready-count-badge active';
-            badge.innerHTML = `⚡ <strong>${count}</strong>/4 เดิมพร้อม${v15Text}`;
+            badge.innerHTML = `⚡ <strong>${count}</strong>/4 เดิมพร้อม`;
         } else {
             badge.className = 'strat-ready-count-badge idle';
-            badge.innerHTML = `⚡ <strong>${count}</strong>/4 เดิม${v15Text}`;
+            badge.innerHTML = `⏳ ${count} กลยุทธ์`;
         }
     };
 
@@ -1392,13 +1292,7 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
         btnEqual.classList.remove('ready-equal');
         btnBreakeven.classList.remove('ready-breakeven');
         btnSmartCut.classList.remove('ready-smart-cut');
-        if (btnReverseV15) btnReverseV15.classList.toggle('ready-reverse-v15', isV15Ready);
         updateReadyCountBadge(0);
-        // 🆕 ซ่อน dot fallback ด้วยเมื่อ clear
-        const dotElClear = document.getElementById('fallbackReadyDot');
-        if (dotElClear) dotElClear.classList.add('hidden');
-        const fallbackBtnElClear = document.getElementById('btnForcedFallback');
-        if (fallbackBtnElClear) fallbackBtnElClear.classList.remove('siren');
     };
 
     if (!leadingCorner || leadingProfit === laggingProfit || !targetRatio || targetRatio <= 0) {
@@ -1479,54 +1373,8 @@ function updateStrategyButtonsReadiness(leadingCorner, leadingProfit, laggingPro
             SoundEngine.checkAndPlayStrategyReadyAlert(readyHash);
         }
 
-        // 🆕 เก็บผล fallback ไว้ใช้แสดงผลตอนกดปุ่ม Forced-Exit Fallback
-        const recoveryPct = laggingProfit !== 0
-            ? ((resEqual.minProfit - laggingProfit) / Math.abs(laggingProfit)) * 100
-            : 0;
-
         if (_entryTargetRatio === null && targetRatio > 0) {
             _entryTargetRatio = targetRatio;
-        }
-
-        // 🆕 เช็คว่า "มีกลยุทธ์กำไรตัวไหน ready บ้างไหม" ไม่ผูกกับ currentStrategy ที่แค่กำลังดูอยู่
-        // (เดิมกดดูปุ่มไหนก็เปลี่ยน currentStrategy ทำให้ไซเรนดับผิดจังหวะ)
-        //
-        // จงใจไม่รวม isSmartCutReady เพราะ "ยอมเสียน้อย" คือสัญญาณ "ควรตัดขาดทุน" 
-        // เหมือนกับ Forced-Exit Fallback เอง — ถ้า smart_cut ready แต่ผู้ใช้ไม่ทันสังเกต 
-        // ไซเรนควรกระพริบต่อเพื่อย้ำเตือนซ้ำ ไม่ใช่ดับไปเฉยๆ ต่างจาก 3 กลยุทธ์กำไร 
-        // (70/30 / ขอเท่าทุน / กำไรเท่ากัน) ที่ถ้า ready แปลว่าได้กำไรตามแผนแล้ว ไม่ต้องเตือนซ้ำ
-        const _fbAnyProfitStrategyReady = isSkewReady || isEqualReady || isBreakevenReady;
-        const _fbMainNotReady = !_fbAnyProfitStrategyReady;
-        const _fbGraceOk = _priceUpdateCountSinceEntry >= 4;
-        const _fbRecoveryOk = recoveryPct >= 80;
-        const _diffPrice = (_entryTargetRatio !== null) ? Math.abs(targetRatio - _entryTargetRatio) : 0;
-        const _fbPriceMoved = _diffPrice >= 0.15;
-        const _fbIsRecommended = _fbMainNotReady && _fbGraceOk && _fbRecoveryOk && _fbPriceMoved;
-
-        console.log(
-            '%c[ForcedFallback] grace=' + _priceUpdateCountSinceEntry + '/4 recovery=' + recoveryPct.toFixed(1) + '% priceDiff=' + _diffPrice.toFixed(2) + ' (>=0.15: ' + _fbPriceMoved + ') mainNotReady=' + _fbMainNotReady + ' → recommended=' + _fbIsRecommended,
-            'color: ' + (_fbIsRecommended ? '#4ade80' : '#fb923c') + '; font-size: 0.85rem;'
-        );
-
-        window._lastFallbackPlan = {
-            hedgeStake: resEqual.hedgeStake,
-            finalRedProf: resEqual.finalRedProf,
-            finalBlueProf: resEqual.finalBlueProf,
-            minProfit: resEqual.minProfit,
-            recoveryPct,
-            isRecommended: _fbIsRecommended  // 🆕 ครบ 4 เงื่อนไขถึงจะ true
-        };
-
-        // 🆕 เช็คเงื่อนไขแนะนำ (highlight dot) — ครบ 4 ข้อ: หลักยังไม่ ready + grace >=4 + recovery >=80% + priceMoved >=0.15
-        const dotEl = document.getElementById('fallbackReadyDot');
-        if (dotEl) {
-            dotEl.classList.toggle('hidden', !_fbIsRecommended);
-        }
-
-        // 🆕 ไซเรนกระพริบแดง-น้ำเงินที่ตัวปุ่มเอง แยกจากคลาส 'active' (ต้องกระพริบแม้ยังไม่ได้กดเข้าไปดู)
-        const fallbackBtnEl = document.getElementById('btnForcedFallback');
-        if (fallbackBtnEl) {
-            fallbackBtnEl.classList.toggle('siren', _fbIsRecommended);
         }
 
         // ——— ตรวจสอบ Auto-Hedge ที่นี่ ไม่ขึ้นกับว่าผู้ใช้อยู่แท็บไหน ———
@@ -1697,9 +1545,7 @@ function calculateActionAndAdvisor(netRed, netBlue) {
         return;
     }
 
-    const isV15Locked = (currentStrategy === 'reverse_v15' && reverseV15State && reverseV15State.reversed === true);
-
-    if (leadingProfit === laggingProfit || isV15Locked) {
+    if (leadingProfit === laggingProfit) {
         updateStrategyButtonsReadiness(null, 0, 0, false, 0);
         if (actionCard) actionCard.className = "action-card neutral";
         if (actionSideEl) actionSideEl.innerText = "พอร์ตสมดุลแล้ว (ไร้ความเสี่ยง / ชนะทั้ง 2 ทาง)";
@@ -1741,41 +1587,7 @@ function calculateActionAndAdvisor(netRed, netBlue) {
 
 
     let hedgeResult;
-    if (currentStrategy === 'reverse_v15') {
-        // 🆕 ใช้ผลที่คำนวณไว้แล้วจาก updateStrategyButtonsReadiness() ตรงๆ
-        const plan = window._lastV15Plan || null;
-        const hedgePreview = plan && plan.hedgePreview;
-        const targetC = reverseV15State ? (reverseV15State.entryCorner === 'red' ? 'blue' : 'red') : (leadingCorner === 'red' ? 'blue' : 'red');
-
-        let finalRedProf = netRed;
-        let finalBlueProf = netBlue;
-        if (reverseV15State && reverseV15State.hedgePreview) {
-            const h = reverseV15State.hedgePreview;
-            const entryCorner = reverseV15State.entryCorner;
-            finalRedProf = entryCorner === 'red' ? h.finalIfEntryWins : h.finalIfEntryLoses;
-            finalBlueProf = entryCorner === 'blue' ? h.finalIfEntryWins : h.finalIfEntryLoses;
-        }
-
-        hedgeResult = {
-            hedgeStake: hedgePreview ? hedgePreview.hedge : 0,
-            targetCorner: targetC,
-            finalRedProf: Math.round(finalRedProf),
-            finalBlueProf: Math.round(finalBlueProf),
-            isReady: !!(plan && plan.phase === 'REVERSE_READY'),
-            isReverseV15: true
-        };
-    } else if (currentStrategy === 'forced_fallback') {
-        // 🆕 ใช้ค่าที่เก็บไว้จาก updateStrategyButtonsReadiness() ตรงๆ ไม่เรียก engine ซ้ำ
-        const plan = window._lastFallbackPlan || { hedgeStake: 0, finalRedProf: 0, finalBlueProf: 0, isReady: false, isRecommended: false };
-        hedgeResult = {
-            hedgeStake: plan.hedgeStake,
-            finalRedProf: plan.finalRedProf,
-            finalBlueProf: plan.finalBlueProf,
-            isReady: true,            // ทำให้ action card แสดงข้อมูลได้เสมอ
-            isFallback: true,         // 🆕 flag บอกว่านี่คือ fallback mode
-            isRecommended: !!plan.isRecommended  // 🆕 ครบ 3 เงื่อนไข → ปุ่มเขียว
-        };
-    } else if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculateStrategyHedge) {
+    if (typeof PriceJourneyEngine !== 'undefined' && PriceJourneyEngine.calculateStrategyHedge) {
         hedgeResult = PriceJourneyEngine.calculateStrategyHedge({
             strategy: currentStrategy,
             leadingCorner,
@@ -1823,31 +1635,18 @@ function calculateActionAndAdvisor(netRed, netBlue) {
         finalBlueProf
     };
 
-    // 🆕 อัปเดตหัว action card ตามกลยุทธ์ที่เลือก
+    // อัปเดตหัว action card
     const actionTitleEl = document.getElementById('actionTitleText');
     if (actionTitleEl) {
-        if (currentStrategy === 'reverse_v15') {
-            actionTitleEl.textContent = '🔄 Hedge Window Reverse:';
-        } else if (currentStrategy === 'forced_fallback') {
-            actionTitleEl.textContent = '🆘 Forced-Exit Fallback (อ้างอิง ไม่ใช่เป้าหมาย):';
-        } else {
-            actionTitleEl.textContent = '👉 สถานะการออกตัว:';
-        }
+        actionTitleEl.textContent = '👉 สถานะการออกตัว:';
     }
 
     if (isReady) {
-        // --- สำหรับ forced_fallback: ลด color ของ actionCard ลงเป็น "ref" ไม่ใช่ "ready" เต็ม ---
-        if (currentStrategy === 'forced_fallback') {
-            if (actionCard) actionCard.className = 'action-card fallback-ref';
-        } else {
-            if (actionCard) actionCard.className = 'action-card ready';
-        }
+        if (actionCard) actionCard.className = 'action-card ready';
 
         if (statusBadge) {
             let stratStatusText = '';
-            if (currentStrategy === 'reverse_v15') {
-                stratStatusText = '🟢 REVERSE READY (พร้อม Reverse)';
-            } else if (currentStrategy === 'skew_runner') {
+            if (currentStrategy === 'skew_runner') {
                 const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
                 stratStatusText = '🔥 รันกำไร 70/30 (' + skewSideLabel + ')';
             } else if (currentStrategy === 'equal') {
@@ -1857,10 +1656,6 @@ function calculateActionAndAdvisor(netRed, netBlue) {
                 stratStatusText = '🟡 ขอเท่าทุน (' + beSideLabel + ')';
             } else if (currentStrategy === 'smart_cut') {
                 stratStatusText = '🛡️ ยอมเสียน้อย (คัทลอส)';
-            } else if (currentStrategy === 'forced_fallback') {
-                const fbPlan = window._lastFallbackPlan;
-                const pct = fbPlan ? fbPlan.recoveryPct.toFixed(1) : '0.0';
-                stratStatusText = '🆘 ทางออกสำรอง (Recovery ' + pct + '%)';
             } else {
                 stratStatusText = '✅ เข้าเงื่อนไขออกตัว';
             }
@@ -1884,142 +1679,41 @@ function calculateActionAndAdvisor(netRed, netBlue) {
         }
 
         if (btnOneClickHedge) {
-            // 🆕 forced_fallback: ปุ่มเขียวต่อเมื่อ isRecommended (ครบ 3 เงื่อนไข) เท่านั้น
-            const isFallbackRecommended = hedgeResult.isFallback && hedgeResult.isRecommended;
-            const isNormalReady = !hedgeResult.isFallback;
-
-            if (isNormalReady || isFallbackRecommended) {
-                // ✅ เขียว: กลยุทธ์ปกติ ready หรือ fallback ครบทุกเงื่อนไข
-                btnOneClickHedge.disabled = false;
-                btnOneClickHedge.className = 'btn-one-click-hedge ready pulse-ready';
-                let stratLabel;
-                if (currentStrategy === 'reverse_v15') {
-                    stratLabel = 'Reverse';
-                } else if (currentStrategy === 'skew_runner') {
-                    const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : (skewTarget70 === 'blue' ? '🔵 น้ำเงิน' : '');
-                    stratLabel = 'รันกำไร 70/30' + (skewSideLabel ? ' (' + skewSideLabel + ')' : '');
-                } else if (currentStrategy === 'breakeven') {
-                    const beSideLabel = breakevenProfitTarget === 'red' ? '🔴 แดงได้กำไร' : '🔵 น้ำเงินได้กำไร';
-                    stratLabel = 'ขอเท่าทุน (' + beSideLabel + ')';
-                } else if (currentStrategy === 'smart_cut') {
-                    stratLabel = 'คุมขาดทุน';
-                } else if (currentStrategy === 'forced_fallback') {
-                    stratLabel = 'ออกทางสำรอง (Forced-Exit)';
-                } else {
-                    stratLabel = 'ล็อคกำไร';
-                }
-                btnOneClickHedge.innerHTML = '<span>⚡ กด' + stratLabel + 'ทันที [' + targetCornerText + ' ' + recommendedStake.toLocaleString() + ' B]</span>';
+            btnOneClickHedge.disabled = false;
+            btnOneClickHedge.className = 'btn-one-click-hedge ready pulse-ready';
+            let stratLabel;
+            if (currentStrategy === 'skew_runner') {
+                const skewSideLabel = skewTarget70 === 'red' ? '🔴 แดง' : (skewTarget70 === 'blue' ? '🔵 น้ำเงิน' : '');
+                stratLabel = 'รันกำไร 70/30' + (skewSideLabel ? ' (' + skewSideLabel + ')' : '');
+            } else if (currentStrategy === 'breakeven') {
+                const beSideLabel = breakevenProfitTarget === 'red' ? '🔴 แดงได้กำไร' : '🔵 น้ำเงินได้กำไร';
+                stratLabel = 'ขอเท่าทุน (' + beSideLabel + ')';
+            } else if (currentStrategy === 'smart_cut') {
+                stratLabel = 'คุมขาดทุน';
             } else {
-                // ⚠️ ส้มอ่อน: fallback ยังไม่ครบเงื่อนไข — กดได้แต่ไม่แนะนำ
-                btnOneClickHedge.disabled = false;
-                btnOneClickHedge.className = 'btn-one-click-hedge fallback-not-ready';
-                const fbPlan = window._lastFallbackPlan;
-                const pct = fbPlan ? fbPlan.recoveryPct.toFixed(1) : '0.0';
-                const grace = _priceUpdateCountSinceEntry;
-                btnOneClickHedge.innerHTML = '<span>⚠️ ยังไม่แนะนำ — Recovery ' + pct + '% (grace ' + grace + '/4 ครั้ง) [' + targetCornerText + ' ' + recommendedStake.toLocaleString() + ' B]</span>';
+                stratLabel = 'ล็อคกำไร';
             }
+            btnOneClickHedge.innerHTML = '<span>⚡ กด' + stratLabel + 'ทันที [' + targetCornerText + ' ' + recommendedStake.toLocaleString() + ' B]</span>';
         }
 
     } else {
 
-        if (currentStrategy === 'reverse_v15') {
-            const phase = reverseV15State ? reverseV15State.phase : 'WAIT';
-            const adv = reverseV15State ? reverseV15State.adverseCount : 0;
-            const maxAdv = typeof ReverseV15Engine !== 'undefined' ? ReverseV15Engine.REVERSE_V15_CONFIG.adverseCountToArm : 4;
-            const cooldown = reverseV15State ? (reverseV15State.cooldownRemaining || 0) : 0;
+        if (actionCard) actionCard.className = 'action-card wait';
+        if (statusBadge) {
+            statusBadge.innerText = '⏳ ยังไม่อยู่ในจุดออกตัว';
+            statusBadge.style.color = 'var(--red-side)';
+        }
+        if (actionSideEl) actionSideEl.innerText = '⚠️ ควรรอราคา! (ถ้ารีบออกตอนนี้จะเสียเปรียบ)';
+        if (actionStakeEl) {
+            actionStakeEl.innerText = 'อย่าเพิ่งกด';
+            actionStakeEl.className = 'stake-badge wait';
+            actionStakeEl.onclick = null;
+        }
 
-            if (phase === 'WAIT') {
-                if (actionCard) actionCard.className = 'action-card wait';
-                if (statusBadge) {
-                    statusBadge.innerText = cooldown > 0 ? `⏳ WAIT (พัก Cooldown ${cooldown} Ticks)` : '⏳ WAIT (ยังไม่ ARM)';
-                    statusBadge.style.color = 'var(--yellow)';
-                }
-                if (actionSideEl) {
-                    actionSideEl.innerText = cooldown > 0
-                        ? `⏳ พัก Cooldown ${cooldown} ticks ก่อนประเมิน ARM รอบใหม่`
-                        : `⚠️ กำลังสะสม Adverse Ticks (${adv}/${maxAdv})`;
-                }
-                if (actionStakeEl) {
-                    actionStakeEl.innerText = 'อย่าเพิ่งกด';
-                    actionStakeEl.className = 'stake-badge wait';
-                    actionStakeEl.onclick = null;
-                }
-                if (btnOneClickHedge) {
-                    btnOneClickHedge.disabled = true;
-                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                    btnOneClickHedge.innerHTML = `<span>⏳ เฝ้าระวังราคา (Adverse ${adv}/${maxAdv})</span>`;
-                }
-            } else if (phase === 'ARMED') {
-                if (actionCard) actionCard.className = 'action-card wait';
-                const wc = (reverseV15State && reverseV15State.hedgePreview) ? Math.round(reverseV15State.hedgePreview.minFinal) : '-';
-                if (statusBadge) {
-                    statusBadge.innerText = '🟡 ARMED (กำลังรอ Hedge Window)';
-                    statusBadge.style.color = 'var(--yellow)';
-                }
-                if (actionSideEl) actionSideEl.innerText = `🟡 ARM แล้ว — รอราคาเข้า Hedge Window (Cycle #${reverseV15State.armCycle || 1})`;
-                if (actionStakeEl) {
-                    actionStakeEl.innerText = 'อย่าเพิ่งกด';
-                    actionStakeEl.className = 'stake-badge wait';
-                    actionStakeEl.onclick = null;
-                }
-                if (btnOneClickHedge) {
-                    btnOneClickHedge.disabled = true;
-                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                    btnOneClickHedge.innerHTML = `<span>🟡 ARMED — รอราคาเข้า Hedge Window (Cycle #${reverseV15State.armCycle || 1})</span>`;
-                }
-            } else if (phase === 'REVERSED') {
-                if (actionCard) actionCard.className = 'action-card neutral';
-                if (statusBadge) {
-                    statusBadge.innerText = '✅ REVERSED';
-                    statusBadge.style.color = 'var(--green)';
-                }
-                if (actionSideEl) actionSideEl.innerText = '✅ Reverse เรียบร้อยแล้ว (ทำการ Hedge แล้ว)';
-                if (actionStakeEl) {
-                    actionStakeEl.innerText = 'เรียบร้อย';
-                    actionStakeEl.className = 'stake-badge';
-                    actionStakeEl.onclick = null;
-                }
-                if (btnOneClickHedge) {
-                    btnOneClickHedge.disabled = true;
-                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                    btnOneClickHedge.innerHTML = '<span>🔒 Reverse เรียบร้อยแล้ว</span>';
-                }
-            } else if (phase === 'EXPIRED') {
-                if (actionCard) actionCard.className = 'action-card neutral';
-                if (statusBadge) {
-                    statusBadge.innerText = '⚪ ARM EXPIRED (รอจังหวะใหม่)';
-                    statusBadge.style.color = 'var(--text-muted)';
-                }
-                if (actionSideEl) actionSideEl.innerText = '⚪ ARM Cycle หมดอายุ — พัก Cooldown และรอประเมินจังหวะใหม่';
-                if (actionStakeEl) {
-                    actionStakeEl.innerText = 'รอจังหวะใหม่';
-                    actionStakeEl.className = 'stake-badge wait';
-                    actionStakeEl.onclick = null;
-                }
-                if (btnOneClickHedge) {
-                    btnOneClickHedge.disabled = true;
-                    btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                    btnOneClickHedge.innerHTML = '<span>⚪ ARM EXPIRED (กำลังกลับไปเฝ้าราคาต่อ)</span>';
-                }
-            }
-        } else {
-            if (actionCard) actionCard.className = 'action-card wait';
-            if (statusBadge) {
-                statusBadge.innerText = '⏳ ยังไม่อยู่ในจุดออกตัว';
-                statusBadge.style.color = 'var(--red-side)';
-            }
-            if (actionSideEl) actionSideEl.innerText = '⚠️ ควรรอราคา! (ถ้ารีบออกตอนนี้จะเสียเปรียบ)';
-            if (actionStakeEl) {
-                actionStakeEl.innerText = 'อย่าเพิ่งกด';
-                actionStakeEl.className = 'stake-badge wait';
-                actionStakeEl.onclick = null;
-            }
-
-            if (btnOneClickHedge) {
-                btnOneClickHedge.disabled = true;
-                btnOneClickHedge.className = 'btn-one-click-hedge disabled';
-                btnOneClickHedge.innerHTML = '<span>⏳ ควรรอราคาเข้าเป้า</span>';
-            }
+        if (btnOneClickHedge) {
+            btnOneClickHedge.disabled = true;
+            btnOneClickHedge.className = 'btn-one-click-hedge disabled';
+            btnOneClickHedge.innerHTML = '<span>⏳ ควรรอราคาเข้าเป้า</span>';
         }
     }
 
@@ -2534,8 +2228,7 @@ function stopSimulation() {
         '_simTimer', '_simCount', '_simMaxCount', '_simIntervalSec', '_isSimPaused',
         'isAutoSyncEnabled', 'currentPrice', 'previousPrice', 'standardBoxingOdds',
         '_isHedgeExecuting', '_hedgeExecutionTimer',
-        '_priceUpdateCountSinceEntry', '_lastCountedOdds', '_entryTargetRatio',
-        'reverseV15State', 'reverseV15Debug'
+        '_priceUpdateCountSinceEntry', '_lastCountedOdds', '_entryTargetRatio'
     ];
     varsToExpose.forEach(function (name) {
         try {
@@ -2560,64 +2253,3 @@ function stopSimulation() {
         } catch (e) {}
     });
 })();
-
-// 🔄 Reverse Engine V15 — Render Panel & Debug Toggle Functions
-function toggleV15PanelBody() {
-    const body = document.getElementById('v15PanelBody');
-    const icon = document.getElementById('v15CollapseIcon');
-    if (!body) return;
-    const isHidden = body.style.display === 'none' || body.classList.contains('hidden');
-    if (isHidden) {
-        body.classList.remove('hidden');
-        body.style.display = '';
-        if (icon) icon.textContent = '▲ ย่อ';
-    } else {
-        body.classList.add('hidden');
-        body.style.display = 'none';
-        if (icon) icon.textContent = '▼ ขยาย';
-    }
-}
-window.toggleV15PanelBody = toggleV15PanelBody;
-
-function renderReverseV15Panel(state) {
-    if (!state || typeof ReverseV15Engine === 'undefined') return;
-    const cornerIcon = c => c === 'red' ? '🔴 แดง' : '🔵 น้ำเงิน';
-    const sideText = s => s === 'fav' ? 'ต่อ' : (s === 'dog' ? 'รอง' : 'เสมอ');
-
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-
-    const statusMap = {
-        WAIT: '⏳ WAIT', ARMED: '🟡 ARMED',
-        REVERSE_READY: '🟢 REVERSE READY', REVERSED: '✅ REVERSED', EXPIRED: '⚪ EXPIRED'
-    };
-    const stText = statusMap[state.phase] || state.phase;
-    set('v15StatusBadge', stText);
-    set('v15HeaderBadge', stText);
-    set('v15EntryText', `${cornerIcon(state.entryCorner)} ${sideText(state.entrySide)} @ ${state.entryOdds.a}:${state.entryOdds.b}`);
-    set('v15AdverseText', `${state.adverseCount} ticks`);
-    set('v15ArmText', state.armed ? '✓ ผ่าน' : `${state.adverseCount}/${ReverseV15Engine.REVERSE_V15_CONFIG.adverseCountToArm}`);
-
-    if (state.hedgePreview) {
-        set('v15HedgeStakeText', `${state.hedgePreview.hedge} B`);
-        set('v15WorstCaseText', `${state.hedgePreview.minFinal >= 0 ? '+' : ''}${Math.round(state.hedgePreview.minFinal)} B`);
-    }
-
-    let reason = '';
-    if (state.phase === 'WAIT') reason = `ยังไม่ ARM (Adverse ${state.adverseCount}/${ReverseV15Engine.REVERSE_V15_CONFIG.adverseCountToArm})`;
-    else if (state.phase === 'ARMED') reason = `รอ Hedge Window (Worst Case ${state.hedgePreview ? Math.round(state.hedgePreview.minFinal) : '-'} B)`;
-    else if (state.phase === 'REVERSE_READY') reason = `Hedge ${state.hedgePreview ? state.hedgePreview.hedge : 0} B พร้อม Reverse`;
-    else if (state.phase === 'REVERSED') reason = `Reverse เรียบร้อยแล้ว (${state.hedgePreview ? state.hedgePreview.hedge : 0} B)`;
-    else if (state.phase === 'EXPIRED') reason = `ARM หมดอายุ (เกิน ${ReverseV15Engine.REVERSE_V15_CONFIG.armExpiryTicks} ticks)`;
-    set('v15ReasonText', reason);
-
-    const debugEl = document.getElementById('v15DebugOutput');
-    if (reverseV15Debug && debugEl && state.debugInfo) {
-        debugEl.innerText = JSON.stringify(state.debugInfo, null, 2);
-    }
-}
-
-function toggleV15Debug(checked) {
-    reverseV15Debug = checked;
-    const out = document.getElementById('v15DebugOutput');
-    if (out) out.classList.toggle('hidden', !checked);
-}
